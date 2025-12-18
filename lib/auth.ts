@@ -225,6 +225,6 @@ export async function requireLearner() {
   return requireRole("learner");
 }
 
-export function getClientIp() {
+export async function getClientIp() {
   return headers().get("x-forwarded-for") ?? "unknown";
 }
