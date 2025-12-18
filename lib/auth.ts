@@ -98,7 +98,7 @@ export async function registerUser(input: {
   const passwordHash = await hashPassword(password);
   await db.insert(users).values({ id, email, passwordHash, role });
 
-  const user: AuthResult["user"] = { id, email, role };
+  const user: Pick<User, "id" | "email" | "role"> = { id, email, role };
   await createSession(user.id);
 
   return { ok: true, user };
