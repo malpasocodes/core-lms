@@ -146,7 +146,7 @@ async function createSession(userId: string) {
     expiresAt,
   });
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -157,7 +157,7 @@ async function createSession(userId: string) {
 }
 
 export async function logoutUser() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
   if (!sessionId) return;
   await ensureAuthTables();
@@ -168,7 +168,7 @@ export async function logoutUser() {
 
 export async function getCurrentUser() {
   await ensureAuthTables();
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
   if (!sessionId) return null;
 
