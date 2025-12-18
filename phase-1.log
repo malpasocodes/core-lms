@@ -1,0 +1,4 @@
+Phase 1 – Project Initialization & First Visible UI
+- Verified Next.js shell, dashboard, and routing in place
+- Connected to Neon Postgres (`SELECT 1`)
+- Added UI scaffolding and startup logics for Phase 2 handoff
