@@ -15,7 +15,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.0",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "next": "16.0.10",
     "radix-ui": "^1.4.3",
     "react": "19.2.1",
@@ -28,7 +28,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/bcrypt": "^5",
+    "@types/bcryptjs": "^2",
     "@types/pg": "^8",
     "@types/react": "^19",
     "@types/react-dom": "^19",

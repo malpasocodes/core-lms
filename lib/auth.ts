@@ -2,7 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import bcrypt from "bcrypt";
+import { compareSync, hashSync } from "bcryptjs";
 import { and, eq, gt } from "drizzle-orm";
 
 import { getDb, sql } from "@/lib/db";
@@ -57,11 +57,11 @@ function sessionExpiry() {
 }
 
 async function hashPassword(password: string) {
-  return bcrypt.hash(password, 12);
+  return hashSync(password, 12);
 }
 
 async function verifyPassword(password: string, hash: string) {
-  return bcrypt.compare(password, hash);
+  return compareSync(password, hash);
 }
 
 export async function registerUser(input: {
