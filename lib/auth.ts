@@ -226,5 +226,6 @@ export async function requireLearner() {
 }
 
 export async function getClientIp() {
-  return headers().get("x-forwarded-for") ?? "unknown";
+  const h = await headers();
+  return h.get("x-forwarded-for") ?? "unknown";
 }
