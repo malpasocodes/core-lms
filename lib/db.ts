@@ -1,12 +1,14 @@
 import { Client } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
+
+import * as schema from "@/lib/schema";
 
 const connectionString = process.env.DATABASE_URL;
 
 const client = connectionString ? new Client({ connectionString }) : null;
 let connectionPromise: Promise<void> | null = null;
-
-export const db = client ? drizzle(client) : null;
+let drizzleDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
 export type DatabaseConnectionStatus = {
   ready: boolean;
@@ -26,6 +28,13 @@ async function connectClient() {
   return client;
 }
 
+export async function getDb() {
+  if (drizzleDb) return drizzleDb;
+  const connectedClient = await connectClient();
+  drizzleDb = drizzle(connectedClient, { schema });
+  return drizzleDb;
+}
+
 export async function checkDatabaseConnection(): Promise<DatabaseConnectionStatus> {
   if (!connectionString) {
     return {
@@ -35,8 +44,9 @@ export async function checkDatabaseConnection(): Promise<DatabaseConnectionStatu
   }
 
   try {
-    const connectedClient = await connectClient();
-    const { rows } = await connectedClient.query("SELECT 1 AS ready");
+    const db = await getDb();
+    const result = await db.execute(sql`SELECT 1 AS ready`);
+    const rows = Array.isArray(result?.rows) ? result.rows : [];
     const ready = rows?.[0]?.ready === 1;
     return {
       ready,
@@ -52,3 +62,5 @@ export async function checkDatabaseConnection(): Promise<DatabaseConnectionStatu
     };
   }
 }
+
+export { sql };

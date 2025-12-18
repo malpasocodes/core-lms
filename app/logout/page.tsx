@@ -1,33 +1,28 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { logoutUser, requireUser } from "@/lib/auth";
 
-export default function LogoutPlaceholderPage() {
+export default async function LogoutPage() {
+  await requireUser();
+
+  async function logoutAction() {
+    "use server";
+    await logoutUser();
+    redirect("/auth/login");
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Logout</h1>
-        <p className="text-sm text-muted-foreground">
-          This is a placeholder route; real sign-out will be wired during authentication in Phase 3.
-        </p>
-      </div>
-
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>Not yet implemented</CardTitle>
-          <CardDescription>Session handling will land with auth.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>For now, use the navigation to explore other areas of the LMS shell.</p>
-          <p>
-            Need to log in instead? Visit the{" "}
-            <Link className="text-foreground underline" href="/auth/login">
-              login page
-            </Link>
-            .
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <form action={logoutAction} className="flex flex-col gap-3">
+      <h1 className="text-2xl font-semibold text-foreground">Logout</h1>
+      <p className="text-sm text-muted-foreground">
+        This will end your current session across the site. You can sign back in at any time.
+      </p>
+      <button
+        type="submit"
+        className="w-fit rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
+      >
+        Confirm logout
+      </button>
+    </form>
   );
 }

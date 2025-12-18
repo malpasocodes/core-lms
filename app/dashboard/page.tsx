@@ -1,9 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { checkDatabaseConnection } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function DashboardPage() {
-  const dbStatus = await checkDatabaseConnection();
+  const [dbStatus, user] = await Promise.all([
+    checkDatabaseConnection(),
+    getCurrentUser(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -21,6 +25,18 @@ export default async function DashboardPage() {
           Everything beyond this screen is intentionally deferred—showing that a
           scaffolded LMS can be live without complexity.
         </p>
+        {user ? (
+          <div className="flex items-center gap-4 text-sm text-foreground/80">
+            <Badge variant="outline" className="text-xs">
+              {user.role}
+            </Badge>
+            <span className="font-mono text-xs">{user.email}</span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            You are browsing as a guest. Sign in to see personalized content.
+          </p>
+        )}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">

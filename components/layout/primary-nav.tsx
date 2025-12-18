@@ -11,18 +11,32 @@ type NavItem = {
   href: string;
 };
 
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Courses", href: "/courses" },
-  { label: "Logout", href: "/logout" }, // placeholder route for now
-];
+type PrimaryNavProps = {
+  user?: { email: string; role: "learner" | "instructor" | "admin" };
+};
 
-export function PrimaryNav() {
+export function PrimaryNav({ user }: PrimaryNavProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   const isActive = (href: string) =>
     pathname === href || (href !== "/" && pathname?.startsWith(href));
+
+  const navItems: NavItem[] = [
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Courses", href: "/courses" },
+  ];
+
+  if (user?.role === "admin") {
+    navItems.push({ label: "Admin", href: "/admin" });
+  }
+
+  if (user) {
+    navItems.push({ label: "Logout", href: "/logout" });
+  } else {
+    navItems.push({ label: "Login", href: "/auth/login" });
+    navItems.push({ label: "Register", href: "/auth/register" });
+  }
 
   return (
     <div className="flex items-center gap-2">

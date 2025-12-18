@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { PrimaryNav } from "@/components/layout/primary-nav";
+import { getCurrentUser } from "@/lib/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -21,11 +22,13 @@ export const metadata: Metadata = {
     "A minimalist LMS shell built with Next.js, Neon Postgres, and restrained UI to prove the commodity nature of the core LMS.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="en" className={inter.variable}>
       <body
@@ -42,7 +45,7 @@ export default function RootLayout({
                   v0.1
                 </span>
               </div>
-              <PrimaryNav />
+              <PrimaryNav user={user ?? undefined} />
             </div>
           </header>
           <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
