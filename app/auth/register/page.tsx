@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { registerUser } from "@/lib/auth";
+import { PasswordInput } from "@/components/password-input";
 
 type RegisterPageProps = {
   searchParams?: Promise<{ error?: string }>;
@@ -55,20 +56,8 @@ export default async function RegisterPage(props: RegisterPageProps) {
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                minLength={8}
-                required
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
-              <p className="text-xs text-muted-foreground">Minimum 8 characters.</p>
-            </div>
+            <PasswordInput id="password" name="password" label="Password" required minLength={8} />
+            <p className="text-xs text-muted-foreground">Minimum 8 characters.</p>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-foreground" htmlFor="role">
                 Role
