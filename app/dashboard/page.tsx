@@ -24,7 +24,7 @@ export default async function DashboardPage() {
               published: courses.published,
             })
             .from(courses)
-            .where((c, { eq }) => eq(c.instructorId, user.id)),
+            .where(eq(courses.instructorId, user.id)),
           db.select({ id: courses.id, title: courses.title, published: courses.published }).from(courses),
         ])
       : [[], []];
