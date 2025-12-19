@@ -114,7 +114,7 @@ export default async function DashboardPage() {
               <CourseList
                 heading="Enrolled courses"
                 emptyText="No enrolled courses yet."
-                courses={learnerCourses}
+                courses={learnerCourses.filter((c): c is { id: string; title: string; published: "true" | "false" } => Boolean(c.id && c.title && c.published))}
               />
             )}
           </CardContent>
