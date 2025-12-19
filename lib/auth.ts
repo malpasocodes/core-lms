@@ -29,6 +29,9 @@ async function ensureAuthTables() {
       IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
         CREATE TYPE user_role AS ENUM ('learner', 'instructor', 'admin');
       END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'content_type') THEN
+        CREATE TYPE content_type AS ENUM ('page', 'link');
+      END IF;
     END$$;
   `);
   await db.execute(sql`
@@ -65,6 +68,26 @@ async function ensureAuthTables() {
       course_id text NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
       enrolled_at timestamptz NOT NULL DEFAULT now(),
       CONSTRAINT enrollments_user_course_unique UNIQUE (user_id, course_id)
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS modules (
+      id text PRIMARY KEY,
+      course_id text NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+      title text NOT NULL,
+      "order" integer NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS content_items (
+      id text PRIMARY KEY,
+      module_id text NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
+      type content_type NOT NULL,
+      title text NOT NULL,
+      content text NOT NULL,
+      "order" integer NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
   ensured = true;
