@@ -28,6 +28,7 @@ export function PrimaryNav({ user }: PrimaryNavProps) {
   ];
 
   if (user?.role === "admin") {
+    navItems.push({ label: "Roster", href: "/admin/roster" });
     navItems.push({ label: "Admin", href: "/admin" });
   }
 
