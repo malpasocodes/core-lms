@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { checkDatabaseConnection, getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { courses } from "@/lib/schema";
+import { courses, enrollments } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { CourseForm } from "./_components/course-form";
 import { CourseList } from "./_components/course-list";
@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   const db = user ? await getDb() : null;
 
-  const [ownedCourses, allCourses] =
+  const [ownedCourses, allCourses, learnerCourses] =
     user && db
       ? await Promise.all([
           db
@@ -27,8 +27,17 @@ export default async function DashboardPage() {
             .from(courses)
             .where(eq(courses.instructorId, user.id)),
           db.select({ id: courses.id, title: courses.title, published: courses.published }).from(courses),
+          db
+            .select({
+              id: courses.id,
+              title: courses.title,
+              published: courses.published,
+            })
+            .from(enrollments)
+            .leftJoin(courses, eq(enrollments.courseId, courses.id))
+            .where(eq(enrollments.userId, user.id)),
         ])
-      : [[], []];
+      : [[], [], []];
 
   return (
     <div className="space-y-6">
@@ -102,9 +111,11 @@ export default async function DashboardPage() {
                 courses={allCourses}
               />
             ) : (
-              <p className="rounded-lg border border-dashed border-border/70 bg-muted/40 px-3 py-2 text-muted-foreground">
-                No enrolled courses yet. Enrollment will arrive in Phase 5.
-              </p>
+              <CourseList
+                heading="Enrolled courses"
+                emptyText="No enrolled courses yet."
+                courses={learnerCourses}
+              />
             )}
           </CardContent>
         </Card>

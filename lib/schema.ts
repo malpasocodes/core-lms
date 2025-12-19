@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("user_role", ["learner", "instructor", "admin"]);
 
@@ -37,3 +37,22 @@ export const courses = pgTable("courses", {
 });
 
 export type Course = typeof courses.$inferSelect;
+
+export const enrollments = pgTable(
+  "enrollments",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    enrolledAt: timestamp("enrolled_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    userCourseUnique: uniqueIndex("enrollments_user_course_unique").on(table.userId, table.courseId),
+  })
+);
+
+export type Enrollment = typeof enrollments.$inferSelect;

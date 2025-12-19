@@ -9,4 +9,10 @@ Phase 3 – Authentication & Identity
 - Added registration/login/logout flows with bcryptjs hashing
 - Wired role-aware nav and dashboards (learner/instructor/admin)
 - Seed endpoint added for demo accounts
+
+Phase 4 – Role-Aware Dashboards & Courses
+- Added courses schema and instructor-only course creation
+- Role-aware dashboards: instructors see owned courses, admins see all courses, learners see empty state
+- Course detail pages render real data
+- Deployed successfully with course creation validated
 - Deployed to Vercel (production URL live)

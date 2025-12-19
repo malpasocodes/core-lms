@@ -1,8 +1,13 @@
 import { notFound } from "next/navigation";
 
+import { redirect } from "next/navigation";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { courses } from "@/lib/schema";
+import { courses, enrollments, users } from "@/lib/schema";
+import { eq } from "drizzle-orm";
+import { enrollLearnerAction } from "@/lib/enrollment-actions";
 
 type CoursePageProps = {
   params: Promise<{ courseId: string }>;
@@ -16,13 +21,47 @@ export default async function CourseDetailPage(props: CoursePageProps) {
   }
 
   const db = await getDb();
-  const course = await db.query.courses.findFirst({
-    where: (c, { eq }) => eq(c.id, courseId),
-  });
+  const [course, user] = await Promise.all([
+    db.query.courses.findFirst({
+      where: (c, { eq }) => eq(c.id, courseId),
+    }),
+    getCurrentUser(),
+  ]);
 
   if (!course) {
     notFound();
   }
+
+  const isOwner = user?.role === "instructor" && user.id === course.instructorId;
+  const isAdmin = user?.role === "admin";
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  let isEnrolled = false;
+  if (user?.role === "learner") {
+    const enrollment = await db.query.enrollments.findFirst({
+      columns: { id: true },
+      where: (e, { and, eq }) => and(eq(e.courseId, courseId), eq(e.userId, user.id)),
+    });
+    isEnrolled = Boolean(enrollment);
+  }
+
+  const canView = isAdmin || isOwner || isEnrolled || user?.role === "instructor";
+  if (!canView) {
+    redirect("/dashboard?error=Not%20enrolled%20in%20this%20course");
+  }
+
+  const enrolledLearners =
+    (isAdmin || isOwner) &&
+    (await db
+      .select({
+        email: users.email,
+      })
+      .from(enrollments)
+      .leftJoin(users, eq(enrollments.userId, users.id))
+      .where(eq(enrollments.courseId, courseId)));
 
   return (
     <div className="space-y-4">
@@ -57,6 +96,58 @@ export default async function CourseDetailPage(props: CoursePageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {isAdmin || isOwner ? (
+        <div className="grid gap-4 md:grid-cols-[1.5fr_1fr]">
+          <Card>
+            <CardHeader>
+              <CardTitle>Enrolled learners</CardTitle>
+              <CardDescription>Read-only list of enrolled learners.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              {enrolledLearners && enrolledLearners.length > 0 ? (
+                <ul className="list-disc space-y-1 pl-4">
+                  {enrolledLearners.map((row) => (
+                    <li key={row.email}>{row.email}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No learners enrolled yet.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Enroll a learner</CardTitle>
+              <CardDescription>Enroll by learner email (must already exist as a learner).</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={enrollLearnerAction} className="space-y-3">
+                <input type="hidden" name="courseId" value={courseId} />
+                <div className="space-y-1">
+                  <label htmlFor="email" className="text-xs font-semibold text-foreground">
+                    Learner email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
+                >
+                  Enroll learner
+                </button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }

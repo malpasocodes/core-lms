@@ -58,6 +58,15 @@ async function ensureAuthTables() {
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS enrollments (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      course_id text NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+      enrolled_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT enrollments_user_course_unique UNIQUE (user_id, course_id)
+    );
+  `);
   ensured = true;
 }
 
