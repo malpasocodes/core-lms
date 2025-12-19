@@ -1,4 +1,5 @@
 import { hashSync } from "bcryptjs";
+import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/schema";
@@ -25,13 +26,7 @@ export async function seedDemoUsers() {
   const db = await getDb();
 
   for (const demo of demoUsers) {
-    const existing = await db.query.users.findFirst({
-      columns: { id: true },
-      where: (u, { eq }) => eq(u.email, demo.email),
-    });
-    if (existing) {
-      continue;
-    }
+    await db.delete(users).where(eq(users.email, demo.email));
     await db.insert(users).values({
       id: crypto.randomUUID(),
       email: demo.email.toLowerCase(),
