@@ -15,4 +15,29 @@ Phase 4 – Role-Aware Dashboards & Courses
 - Role-aware dashboards: instructors see owned courses, admins see all courses, learners see empty state
 - Course detail pages render real data
 - Deployed successfully with course creation validated
+
+Phase 5 – Enrollment
+- Added enrollments join table with uniqueness
+- Enrollment server action for admin/owners; learner email validation
+- Learner dashboard shows enrolled courses; course access gated by enrollment/ownership/admin
+- Instructors/Admins can view enrolled learners and enroll by email on course pages
+- Deployed successfully
+
+Phase 6 – Course Content (Modules & Items)
+- Added modules and content items with ordered insertion
+- Instructors/Admins can add modules and content (page/link) per course
+- Learners see modules/items when enrolled; access guards enforced
+- Content item pages support in-module next/prev navigation
+- Deployed successfully
+
+Admin Roster
+- Added admin-only roster view and nav link
+- Admins can add users (email/password/role) and delete users (self-delete blocked)
+- Deployed successfully
+Phase 6 – Course Content (Modules & Items)
+- Added modules and content items with ordered insertion
+- Instructors/Admins can add modules and content (page/link) per course
+- Learners see modules/items when enrolled; access guards enforced
+- Content item pages support in-module next/prev navigation
+- Deployed successfully
 - Deployed to Vercel (production URL live)

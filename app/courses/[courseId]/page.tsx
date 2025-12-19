@@ -38,10 +38,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
   const isOwner = user.role === "instructor" && user.id === course.instructorId;
   const isAdmin = user.role === "admin";
 
-  if (user.role === "instructor" && !isOwner && !isAdmin) {
-    redirect("/dashboard?error=Not%20authorized");
-  }
-
   let isEnrolled = false;
   if (user?.role === "learner") {
     const enrollment = await db.query.enrollments.findFirst({
@@ -51,7 +47,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     isEnrolled = Boolean(enrollment);
   }
 
-  const canView = isAdmin || isOwner || isEnrolled || user?.role === "instructor";
+  const canView = isAdmin || isOwner || isEnrolled;
   if (!canView) {
     redirect("/dashboard?error=Not%20enrolled%20in%20this%20course");
   }

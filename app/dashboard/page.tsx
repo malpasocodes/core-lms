@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { checkDatabaseConnection, getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { courses, enrollments } from "@/lib/schema";
+import { courses, enrollments, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { CourseForm } from "./_components/course-form";
 import { CourseList } from "./_components/course-list";
@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   const db = user ? await getDb() : null;
 
-  const [ownedCourses, allCourses, learnerCourses] =
+  const [ownedCourses, allCourses, learnerCourses, instructorOptions] =
     user && db
       ? await Promise.all([
           db
@@ -36,8 +36,14 @@ export default async function DashboardPage() {
             .from(enrollments)
             .leftJoin(courses, eq(enrollments.courseId, courses.id))
             .where(eq(enrollments.userId, user.id)),
+          user.role === "admin"
+            ? db
+                .select({ id: users.id, email: users.email })
+                .from(users)
+                .where(eq(users.role, "instructor"))
+            : [],
         ])
-      : [[], [], []];
+      : [[], [], [], []];
 
   return (
     <div className="space-y-6">
@@ -121,13 +127,13 @@ export default async function DashboardPage() {
         </Card>
       </section>
 
-      {user?.role === "instructor" ? (
+      {user?.role === "admin" ? (
         <section className="rounded-2xl border border-border/80 bg-background/80 px-6 py-6 space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Create a course</h2>
           <p className="text-sm text-muted-foreground">
-            Courses are owned by instructors and will appear on your dashboard immediately.
+            Courses are assigned to instructors by admins and appear immediately in their view.
           </p>
-          <CourseForm />
+          <CourseForm instructors={instructorOptions} />
         </section>
       ) : null}
 

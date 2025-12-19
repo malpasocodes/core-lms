@@ -4,7 +4,9 @@ import { useTransition } from "react";
 
 import { createCourseAction } from "@/lib/course-actions";
 
-export function CourseForm() {
+type InstructorOption = { id: string; email: string };
+
+export function CourseForm({ instructors }: { instructors: InstructorOption[] }) {
   const [pending, startTransition] = useTransition();
 
   function handleAction(formData: FormData) {
@@ -34,6 +36,24 @@ export function CourseForm() {
           rows={3}
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
+      </div>
+      <div className="space-y-1">
+        <label htmlFor="instructorId" className="text-xs font-semibold text-foreground">
+          Assign instructor
+        </label>
+        <select
+          id="instructorId"
+          name="instructorId"
+          required
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+        >
+          <option value="">Select instructor</option>
+          {instructors.map((inst) => (
+            <option key={inst.id} value={inst.id}>
+              {inst.email}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="flex items-center gap-2 text-sm">
         <input id="published" name="published" type="checkbox" className="h-4 w-4" />
