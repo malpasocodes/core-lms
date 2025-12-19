@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { checkDatabaseConnection, getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { courses } from "@/lib/schema";
+import { eq } from "drizzle-orm";
 import { CourseForm } from "./_components/course-form";
 import { CourseList } from "./_components/course-list";
 
