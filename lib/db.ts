@@ -1,4 +1,4 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import { sql } from "drizzle-orm";
 
