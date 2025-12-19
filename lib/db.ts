@@ -1,42 +1,27 @@
-import { Client } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { neon } from "@neondatabase/serverless";
 import { sql } from "drizzle-orm";
 
 import * as schema from "@/lib/schema";
 
 const connectionString = process.env.DATABASE_URL;
-
-const client = connectionString ? new Client({ connectionString }) : null;
-let connectionPromise: Promise<void> | null = null;
-let drizzleDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
+const neonClient = connectionString ? neon(connectionString) : null;
+const drizzleDb = neonClient ? drizzle(neonClient, { schema }) : null;
 
 export type DatabaseConnectionStatus = {
   ready: boolean;
   message: string;
 };
 
-async function connectClient() {
-  if (!client) {
-    throw new Error("DATABASE_URL is not configured");
-  }
-
-  if (!connectionPromise) {
-    connectionPromise = client.connect();
-  }
-
-  await connectionPromise;
-  return client;
-}
-
 export async function getDb() {
-  if (drizzleDb) return drizzleDb;
-  const connectedClient = await connectClient();
-  drizzleDb = drizzle(connectedClient, { schema });
+  if (!drizzleDb) {
+    throw new Error("Database client not initialized; check DATABASE_URL");
+  }
   return drizzleDb;
 }
 
 export async function checkDatabaseConnection(): Promise<DatabaseConnectionStatus> {
-  if (!connectionString) {
+  if (!drizzleDb) {
     return {
       ready: false,
       message: "DATABASE_URL is not configured in this environment",
@@ -44,9 +29,8 @@ export async function checkDatabaseConnection(): Promise<DatabaseConnectionStatu
   }
 
   try {
-    const db = await getDb();
-    const result = await db.execute(sql`SELECT 1 AS ready`);
-    const rows = Array.isArray(result?.rows) ? result.rows : [];
+    const result = await drizzleDb.execute(sql`SELECT 1 AS ready`);
+    const rows = Array.isArray((result as any)?.rows) ? (result as any).rows : [];
     const ready = rows?.[0]?.ready === 1;
     return {
       ready,
