@@ -55,14 +55,17 @@ export default async function CourseItemPage(props: ItemPageProps) {
     redirect("/dashboard?error=Not%20enrolled%20in%20this%20course");
   }
 
-  const siblings = await db
-    .select({
-      id: contentItems.id,
-      title: contentItems.title,
-    })
-    .from(contentItems)
-    .where(eq(contentItems.moduleId, item.moduleId))
-    .orderBy(contentItems.order);
+  const siblings =
+    item.moduleId && typeof item.moduleId === "string"
+      ? await db
+          .select({
+            id: contentItems.id,
+            title: contentItems.title,
+          })
+          .from(contentItems)
+          .where(eq(contentItems.moduleId, item.moduleId))
+          .orderBy(contentItems.order)
+      : [];
 
   const idx = siblings.findIndex((s) => s.id === itemId);
   const prev = idx > 0 ? siblings[idx - 1] : null;
