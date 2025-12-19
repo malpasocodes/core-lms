@@ -127,16 +127,6 @@ export default async function DashboardPage() {
         </Card>
       </section>
 
-      {user?.role === "admin" ? (
-        <section className="rounded-2xl border border-border/80 bg-background/80 px-6 py-6 space-y-3">
-          <h2 className="text-lg font-semibold text-foreground">Create a course</h2>
-          <p className="text-sm text-muted-foreground">
-            Courses are assigned to instructors by admins and appear immediately in their view.
-          </p>
-          <CourseForm instructors={instructorOptions} />
-        </section>
-      ) : null}
-
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>

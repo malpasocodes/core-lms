@@ -55,3 +55,40 @@ export async function deleteCourseAction(formData: FormData) {
   await db.delete(courses).where(eq(courses.id, courseId));
   redirect("/dashboard?notice=Course%20deleted");
 }
+
+export async function updateCourseAction(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin) redirect("/auth/login");
+
+  const courseId = (formData.get("courseId") as string | null)?.trim();
+  const title = (formData.get("title") as string | null)?.trim();
+  const description = (formData.get("description") as string | null)?.trim() || "";
+  const instructorId = (formData.get("instructorId") as string | null)?.trim();
+  const published = formData.get("published") === "on" ? "true" : "false";
+
+  if (!courseId || !title || !instructorId) {
+    redirect("/courses?error=Missing%20fields");
+  }
+
+  const db = await getDb();
+  const instructor = await db.query.users.findFirst({
+    columns: { id: true, role: true },
+    where: eq(users.id, instructorId),
+  });
+
+  if (!instructor || instructor.role !== "instructor") {
+    redirect("/courses?error=Instructor%20not%20found");
+  }
+
+  await db
+    .update(courses)
+    .set({
+      title,
+      description,
+      instructorId,
+      published,
+    })
+    .where(eq(courses.id, courseId));
+
+  redirect("/courses?notice=Course%20updated");
+}
