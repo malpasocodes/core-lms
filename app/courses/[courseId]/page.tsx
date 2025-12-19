@@ -3,8 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { contentItems, courses, enrollments, modules, users } from "@/lib/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { contentItems, courses, enrollments, modules, users, completions } from "@/lib/schema";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { enrollLearnerAction } from "@/lib/enrollment-actions";
 import { createContentItemAction, createModuleAction } from "@/lib/module-actions";
 
@@ -84,12 +84,44 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     acc[id] = itemRows.filter((item) => item.moduleId === id);
     return acc;
   }, {});
+  const totalItems = itemRows.length;
+
+  const learnerCompletionSet =
+    user.role === "learner" && itemRows.length
+      ? new Set(
+          (
+            await db
+              .select({ contentItemId: completions.contentItemId })
+              .from(completions)
+              .where(
+                and(
+                  eq(completions.userId, user.id),
+                  inArray(completions.contentItemId, itemRows.map((i) => i.id))
+                )
+              )
+          ).map((c) => c.contentItemId)
+        )
+      : new Set<string>();
+
+  const completionByUser =
+    (isAdmin || isOwner) && itemRows.length
+      ? await db
+          .select({
+            userId: completions.userId,
+            count: sql<number>`count(*)`,
+          })
+          .from(completions)
+          .where(inArray(completions.contentItemId, itemRows.map((i) => i.id)))
+          .groupBy(completions.userId)
+      : [];
+  const completionMap = new Map<string, number>(completionByUser.map((c) => [c.userId, Number(c.count || 0)]));
 
   const enrolledLearners =
     (isAdmin || isOwner) &&
     (await db
       .select({
         email: users.email,
+        id: users.id,
       })
       .from(enrollments)
       .leftJoin(users, eq(enrollments.userId, users.id))
@@ -127,80 +159,99 @@ export default async function CourseDetailPage(props: CoursePageProps) {
             {moduleRows.length === 0 ? (
               <p>No modules yet.</p>
             ) : (
-              moduleRows.map((mod) => (
-                <div key={mod.id} className="space-y-2 rounded-lg border border-border/70 bg-card/70 px-3 py-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{mod.title}</p>
-                      <p className="text-xs text-muted-foreground">Order: {mod.order}</p>
+              moduleRows.map((mod) => {
+                const items = itemsByModule[mod.id] || [];
+                const completedCount =
+                  user.role === "learner"
+                    ? items.filter((item) => learnerCompletionSet.has(item.id)).length
+                    : undefined;
+                return (
+                  <div key={mod.id} className="space-y-2 rounded-lg border border-border/70 bg-card/70 px-3 py-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{mod.title}</p>
+                        <p className="text-xs text-muted-foreground">Order: {mod.order}</p>
+                      </div>
+                      {typeof completedCount === "number" ? (
+                        <span className="text-xs font-semibold text-foreground">
+                          {completedCount}/{items.length} completed
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      {items.length ? (
+                        <ul className="space-y-1 text-sm">
+                          {items.map((item) => (
+                            <li key={item.id} className="flex items-center justify-between">
+                              <a className="text-foreground underline" href={`/courses/${courseId}/items/${item.id}`}>
+                                {item.title}
+                              </a>
+                              <div className="flex items-center gap-2">
+                                {user.role === "learner" && learnerCompletionSet.has(item.id) ? (
+                                  <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
+                                    ✓
+                                  </span>
+                                ) : null}
+                                <span className="text-xs uppercase tracking-wide text-muted-foreground">{item.type}</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No content items yet.</p>
+                      )}
+                      {canEdit ? (
+                        <form action={createContentItemAction} className="space-y-2 rounded-md border border-border/60 bg-background/80 p-3">
+                          <input type="hidden" name="moduleId" value={mod.id} />
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-foreground" htmlFor={`title-${mod.id}`}>
+                              Item title
+                            </label>
+                            <input
+                              id={`title-${mod.id}`}
+                              name="title"
+                              required
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-foreground" htmlFor={`type-${mod.id}`}>
+                              Type
+                            </label>
+                            <select
+                              id={`type-${mod.id}`}
+                              name="type"
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                              defaultValue="page"
+                            >
+                              <option value="page">Text page</option>
+                              <option value="link">External link</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-foreground" htmlFor={`content-${mod.id}`}>
+                              Content (text or URL)
+                            </label>
+                            <textarea
+                              id={`content-${mod.id}`}
+                              name="content"
+                              rows={3}
+                              required
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                            />
+                          </div>
+                          <button
+                            type="submit"
+                            className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
+                          >
+                            Add content item
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    {itemsByModule[mod.id]?.length ? (
-                      <ul className="space-y-1 text-sm">
-                        {itemsByModule[mod.id].map((item) => (
-                          <li key={item.id} className="flex items-center justify-between">
-                            <a className="text-foreground underline" href={`/courses/${courseId}/items/${item.id}`}>
-                              {item.title}
-                            </a>
-                            <span className="text-xs uppercase tracking-wide text-muted-foreground">{item.type}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No content items yet.</p>
-                    )}
-                    {canEdit ? (
-                      <form action={createContentItemAction} className="space-y-2 rounded-md border border-border/60 bg-background/80 p-3">
-                        <input type="hidden" name="moduleId" value={mod.id} />
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-foreground" htmlFor={`title-${mod.id}`}>
-                            Item title
-                          </label>
-                          <input
-                            id={`title-${mod.id}`}
-                            name="title"
-                            required
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-foreground" htmlFor={`type-${mod.id}`}>
-                            Type
-                          </label>
-                          <select
-                            id={`type-${mod.id}`}
-                            name="type"
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                            defaultValue="page"
-                          >
-                            <option value="page">Text page</option>
-                            <option value="link">External link</option>
-                          </select>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-foreground" htmlFor={`content-${mod.id}`}>
-                            Content (text or URL)
-                          </label>
-                          <textarea
-                            id={`content-${mod.id}`}
-                            name="content"
-                            rows={3}
-                            required
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-                        >
-                          Add content item
-                        </button>
-                      </form>
-                    ) : null}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -230,6 +281,30 @@ export default async function CourseDetailPage(props: CoursePageProps) {
               Add module
             </button>
           </form>
+        </div>
+      ) : null}
+
+      {canEdit ? (
+        <div className="rounded-2xl border border-border/80 bg-background/80 px-6 py-6 space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Completion summary</h2>
+          <p className="text-sm text-muted-foreground">Read-only view of enrolled learners and their completion counts.</p>
+          {enrolledLearners && enrolledLearners.length ? (
+            <div className="divide-y divide-border rounded-md border border-border/60 bg-card/80 text-sm">
+              {enrolledLearners.map((learner) => {
+                const completed = completionMap.get(learner.id ?? "") || 0;
+                return (
+                  <div key={learner.id} className="flex items-center justify-between px-3 py-2">
+                    <span className="text-foreground">{learner.email}</span>
+                    <span className="text-xs font-semibold text-foreground">
+                      {completed}/{totalItems || 0}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No enrolled learners yet.</p>
+          )}
         </div>
       ) : null}
 

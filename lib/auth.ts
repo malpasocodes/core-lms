@@ -89,6 +89,13 @@ async function ensureAuthTables() {
       "order" integer NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS completions (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      content_item_id text NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+      completed_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT completions_user_item_unique UNIQUE (user_id, content_item_id)
+    );
   `);
   ensured = true;
 }

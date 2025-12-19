@@ -83,3 +83,22 @@ export const contentItems = pgTable("content_items", {
 
 export type Module = typeof modules.$inferSelect;
 export type ContentItem = typeof contentItems.$inferSelect;
+
+export const completions = pgTable(
+  "completions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    contentItemId: text("content_item_id")
+      .notNull()
+      .references(() => contentItems.id, { onDelete: "cascade" }),
+    completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueCompletion: uniqueIndex("completions_user_item_unique").on(table.userId, table.contentItemId),
+  })
+);
+
+export type Completion = typeof completions.$inferSelect;

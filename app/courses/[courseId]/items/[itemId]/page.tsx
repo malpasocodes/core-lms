@@ -5,7 +5,8 @@ import { and, eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { contentItems, courses, enrollments, modules } from "@/lib/schema";
+import { completions, contentItems, courses, enrollments, modules } from "@/lib/schema";
+import { markContentCompleteAction } from "@/lib/progress-actions";
 
 type ItemPageProps = {
   params: Promise<{ courseId: string; itemId: string }>;
@@ -43,12 +44,20 @@ export default async function CourseItemPage(props: ItemPageProps) {
   const isAdmin = user.role === "admin";
 
   let isEnrolled = false;
+  let isCompleted = false;
   if (user.role === "learner") {
     const enrollment = await db.query.enrollments.findFirst({
       columns: { id: true },
       where: (e, { and, eq }) => and(eq(e.courseId, courseId), eq(e.userId, user.id)),
     });
     isEnrolled = Boolean(enrollment);
+    if (enrollment) {
+      const completion = await db.query.completions.findFirst({
+        columns: { id: true },
+        where: (c, { and, eq }) => and(eq(c.contentItemId, itemId), eq(c.userId, user.id)),
+      });
+      isCompleted = Boolean(completion);
+    }
   }
 
   if (!(isAdmin || isOwner || isEnrolled)) {
@@ -107,13 +116,27 @@ export default async function CourseItemPage(props: ItemPageProps) {
         ) : (
           <span />
         )}
-        {next ? (
-          <Link className="text-sm font-semibold text-foreground underline" href={`/courses/${courseId}/items/${next.id}`}>
-            {next.title} →
-          </Link>
-        ) : (
-          <span />
-        )}
+        <div className="flex items-center gap-3">
+          {user.role === "learner" ? (
+            <form action={markContentCompleteAction}>
+              <input type="hidden" name="itemId" value={itemId} />
+              <button
+                type="submit"
+                disabled={isCompleted}
+                className="rounded-md border border-border px-3 py-1 text-xs font-semibold text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:text-muted-foreground"
+              >
+                {isCompleted ? "Completed" : "Mark complete"}
+              </button>
+            </form>
+          ) : null}
+          {next ? (
+            <Link className="text-sm font-semibold text-foreground underline" href={`/courses/${courseId}/items/${next.id}`}>
+              {next.title} →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </div>
       </div>
     </div>
   );
