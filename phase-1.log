@@ -3,4 +3,10 @@ Phase 1 – Project Initialization & First Visible UI
 - Connected to Neon Postgres (`SELECT 1`)
 - Added UI scaffolding and startup logics for Phase 2 handoff
 - Deployed to Vercel (production URL live)
+
+Phase 3 – Authentication & Identity
+- Implemented DB-backed sessions with secure cookies
+- Added registration/login/logout flows with bcryptjs hashing
+- Wired role-aware nav and dashboards (learner/instructor/admin)
+- Seed endpoint added for demo accounts
 - Deployed to Vercel (production URL live)

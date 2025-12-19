@@ -21,3 +21,19 @@ export const sessions = pgTable("sessions", {
 
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+
+export const courses = pgTable("courses", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  instructorId: text("instructor_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  published: text("published", { enum: ["true", "false"] })
+    .$type<"true" | "false">()
+    .default("false")
+    .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type Course = typeof courses.$inferSelect;

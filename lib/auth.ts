@@ -48,6 +48,16 @@ async function ensureAuthTables() {
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS courses (
+      id text PRIMARY KEY,
+      title text NOT NULL,
+      description text,
+      instructor_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      published text NOT NULL DEFAULT 'false',
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
   ensured = true;
 }
 

@@ -1,13 +1,38 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { checkDatabaseConnection } from "@/lib/db";
+import { checkDatabaseConnection, getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { courses } from "@/lib/schema";
+import { CourseForm } from "./_components/course-form";
+import { CourseList } from "./_components/course-list";
 
 export default async function DashboardPage() {
   const [dbStatus, user] = await Promise.all([
     checkDatabaseConnection(),
     getCurrentUser(),
   ]);
+
+  const db = user ? await getDb() : null;
+
+  const [ownedCourses, allCourses] = user && db
+    ? await Promise.all([
+        db
+          .select({
+            id: courses.id,
+            title: courses.title,
+            published: courses.published,
+          })
+          .from(courses)
+          .where((c, { eq }) => eq(c.instructorId, user.id)),
+        db
+          .select({
+            id: courses.id,
+            title: courses.title,
+            published: courses.published,
+          })
+          .from(courses),
+      ])
+    : [[], []];
 
   return (
     <div className="space-y-6">
@@ -64,17 +89,40 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Your Courses</CardTitle>
             <CardDescription>
-              Courses you are enrolled in will appear here in Phase 4.
+              Role-aware course lists appear here. Enrollment arrives in Phase 5.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p className="rounded-lg border border-dashed border-border/70 bg-muted/40 px-3 py-2">
-              Empty state: Once enrollment is enabled, this section lists active
-              courses with quick access to modules and assignments.
-            </p>
+          <CardContent className="space-y-3 text-sm text-foreground/80">
+            {user?.role === "instructor" ? (
+              <CourseList
+                heading="Owned courses"
+                emptyText="No courses yet. Create one to get started."
+                courses={ownedCourses}
+              />
+            ) : user?.role === "admin" ? (
+              <CourseList
+                heading="All courses"
+                emptyText="No courses yet."
+                courses={allCourses}
+              />
+            ) : (
+              <p className="rounded-lg border border-dashed border-border/70 bg-muted/40 px-3 py-2 text-muted-foreground">
+                No enrolled courses yet. Enrollment will arrive in Phase 5.
+              </p>
+            )}
           </CardContent>
         </Card>
       </section>
+
+      {user?.role === "instructor" ? (
+        <section className="rounded-2xl border border-border/80 bg-background/80 px-6 py-6 space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Create a course</h2>
+          <p className="text-sm text-muted-foreground">
+            Courses are owned by instructors and will appear on your dashboard immediately.
+          </p>
+          <CourseForm />
+        </section>
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>

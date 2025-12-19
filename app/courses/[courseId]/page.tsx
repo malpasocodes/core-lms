@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDb } from "@/lib/db";
+import { courses } from "@/lib/schema";
 
 type CoursePageProps = {
   params: Promise<{ courseId: string }>;
@@ -13,15 +15,24 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     notFound();
   }
 
+  const db = await getDb();
+  const course = await db.query.courses.findFirst({
+    where: (c, { eq }) => eq(c.id, courseId),
+  });
+
+  if (!course) {
+    notFound();
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-1">
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Course</p>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-          {courseId}
+          {course.title}
         </h1>
         <p className="text-sm text-muted-foreground">
-          This is a placeholder for the course overview. Modules and assignments will be added in later phases.
+          {course.description || "This is a placeholder for the course overview. Modules and assignments will be added in later phases."}
         </p>
       </div>
 
