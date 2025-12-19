@@ -14,25 +14,20 @@ export default async function DashboardPage() {
 
   const db = user ? await getDb() : null;
 
-  const [ownedCourses, allCourses] = user && db
-    ? await Promise.all([
-        db
-          .select({
-            id: courses.id,
-            title: courses.title,
-            published: courses.published,
-          })
-          .from(courses)
-          .where((c, { eq }) => eq(c.instructorId, user.id)),
-        db
-          .select({
-            id: courses.id,
-            title: courses.title,
-            published: courses.published,
-          })
-          .from(courses),
-      ])
-    : [[], []];
+  const [ownedCourses, allCourses] =
+    user && db
+      ? await Promise.all([
+          db
+            .select({
+              id: courses.id,
+              title: courses.title,
+              published: courses.published,
+            })
+            .from(courses)
+            .where((c, { eq }) => eq(c.instructorId, user.id)),
+          db.select({ id: courses.id, title: courses.title, published: courses.published }).from(courses),
+        ])
+      : [[], []];
 
   return (
     <div className="space-y-6">
