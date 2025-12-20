@@ -23,17 +23,8 @@ async function ensureAuthTables() {
   if (ensured) return;
   const db = await getDb();
   // Minimal, idempotent schema creation for demo environments without migrations.
-  await db.execute(sql`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-        CREATE TYPE user_role AS ENUM ('learner', 'instructor', 'admin');
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'content_type') THEN
-        CREATE TYPE content_type AS ENUM ('page', 'link');
-      END IF;
-    END$$;
-  `);
+  await db.execute(sql`CREATE TYPE IF NOT EXISTS user_role AS ENUM ('learner', 'instructor', 'admin');`);
+  await db.execute(sql`CREATE TYPE IF NOT EXISTS content_type AS ENUM ('page', 'link');`);
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS users (
       id text PRIMARY KEY,
