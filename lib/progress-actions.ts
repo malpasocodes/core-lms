@@ -37,7 +37,11 @@ export async function markContentCompleteAction(formData: FormData) {
 
   const enrollment = await db.query.enrollments.findFirst({
     columns: { id: true },
-    where: (e, { and, eq }) => and(eq(e.courseId, item.courseId), eq(e.userId, user.id)),
+    where: (e, { and, eq }) =>
+      and(
+        eq(e.courseId, item.courseId as string),
+        eq(e.userId, user.id)
+      ),
   });
   if (!enrollment) {
     redirect("/dashboard?error=Not%20enrolled%20for%20this%20course");
