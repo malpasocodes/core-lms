@@ -26,6 +26,7 @@ export function PrimaryNav({ user }: PrimaryNavProps) {
     ? [
         { label: "Admin", href: "/admin" },
         { label: "Courses", href: "/courses" },
+        { label: "Enroll", href: "/admin/enroll" },
       ]
     : [
         { label: "Dashboard", href: "/dashboard" },
