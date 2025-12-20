@@ -22,14 +22,18 @@ export function PrimaryNav({ user }: PrimaryNavProps) {
   const isActive = (href: string) =>
     pathname === href || (href !== "/" && pathname?.startsWith(href));
 
-  const navItems: NavItem[] = [
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Courses", href: "/courses" },
-  ];
+  const navItems: NavItem[] = user?.role === "admin"
+    ? [
+        { label: "Admin", href: "/admin" },
+        { label: "Courses", href: "/courses" },
+      ]
+    : [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Courses", href: "/courses" },
+      ];
 
   if (user?.role === "admin") {
     navItems.push({ label: "Roster", href: "/admin/roster" });
-    navItems.push({ label: "Admin", href: "/admin" });
   }
 
   if (user) {
