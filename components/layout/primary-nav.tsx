@@ -35,8 +35,18 @@ export function PrimaryNav({ user }: PrimaryNavProps) {
   if (user) {
     navItems.push({ label: "Logout", href: "/logout" });
   } else {
-    navItems.push({ label: "Login", href: "/auth/login" });
-    navItems.push({ label: "Register", href: "/auth/register" });
+    return (
+      <div className="flex items-center gap-2">
+        <Link
+          href="/auth/login"
+          className={cn(
+            "rounded-md px-3 py-1 text-sm font-semibold text-foreground transition hover:bg-background/70"
+          )}
+        >
+          Login
+        </Link>
+      </div>
+    );
   }
 
   return (

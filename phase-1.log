@@ -67,3 +67,4 @@ Phase 8 – Assignments (Outcome collection)
 - Added assignments/submissions schema (one submission per learner)
 - Admin/course instructor can create assignments from course page; learners see status
 - Assignment detail page supports learner submission (text or file URL) and instructor/admin submission list
+- Deployed successfully
