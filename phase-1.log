@@ -40,6 +40,11 @@ Admin Course Management
 - Added admin edit/delete course controls; instructors see only assigned courses
 - Switched to Neon serverless DB client for stability
 - Deployed successfully
+Admin UX Updates
+- Restricted guest nav to login; admins land on Admin dashboard
+- Added admin-only Enroll menu to enroll learners into courses
+- Added simple admin dashboard with course list
+- Deployed successfully
 
 Progress Tracking (Phase 7)
 - Added completions table and learner mark-complete action
