@@ -34,6 +34,28 @@ Admin Roster
 - Added admin-only roster view and nav link
 - Admins can add users (email/password/role) and delete users (self-delete blocked)
 - Deployed successfully
+
+Admin Course Management
+- Moved course creation to Courses page; admin-only with instructor assignment
+- Added admin edit/delete course controls; instructors see only assigned courses
+- Switched to Neon serverless DB client for stability
+- Deployed successfully
+
+Progress Tracking (Phase 7)
+- Added completions table and learner mark-complete action
+- Item pages show completion; modules show completed/total; instructor/admin get read-only completion summary
+- Runtime DDL disabled; Neon drizzle client updated for serverless
+- Deployed successfully
+Progress Tracking (Phase 7)
+- Added completions table and learner mark-complete action
+- Item pages show completion; modules show completed/total; instructor/admin get read-only completion summary
+- Runtime DDL disabled; Neon drizzle client updated for serverless
+- Deployed successfully
+Admin Course Management
+- Moved course creation to Courses page; admin-only with instructor assignment
+- Added admin edit/delete course controls; instructors see only assigned courses
+- Switched to Neon serverless DB client for stability
+- Deployed successfully
 Phase 6 – Course Content (Modules & Items)
 - Added modules and content items with ordered insertion
 - Instructors/Admins can add modules and content (page/link) per course
@@ -41,3 +63,7 @@ Phase 6 – Course Content (Modules & Items)
 - Content item pages support in-module next/prev navigation
 - Deployed successfully
 - Deployed to Vercel (production URL live)
+Phase 8 – Assignments (Outcome collection)
+- Added assignments/submissions schema (one submission per learner)
+- Admin/course instructor can create assignments from course page; learners see status
+- Assignment detail page supports learner submission (text or file URL) and instructor/admin submission list

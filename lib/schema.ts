@@ -84,6 +84,35 @@ export const contentItems = pgTable("content_items", {
 export type Module = typeof modules.$inferSelect;
 export type ContentItem = typeof contentItems.$inferSelect;
 
+export const assignments = pgTable("assignments", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const submissions = pgTable(
+  "submissions",
+  {
+    id: text("id").primaryKey(),
+    assignmentId: text("assignment_id")
+      .notNull()
+      .references(() => assignments.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    submissionText: text("submission_text"),
+    fileUrl: text("file_url"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueSubmission: uniqueIndex("submissions_assignment_user_unique").on(table.assignmentId, table.userId),
+  })
+);
+
 export const completions = pgTable(
   "completions",
   {
@@ -102,3 +131,5 @@ export const completions = pgTable(
 );
 
 export type Completion = typeof completions.$inferSelect;
+export type Assignment = typeof assignments.$inferSelect;
+export type Submission = typeof submissions.$inferSelect;
