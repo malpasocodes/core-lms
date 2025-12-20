@@ -80,6 +80,8 @@ async function ensureAuthTables() {
       "order" integer NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now()
     );
+  `);
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS completions (
       id text PRIMARY KEY,
       user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
