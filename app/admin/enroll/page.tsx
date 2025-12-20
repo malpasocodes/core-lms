@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { courses, users } from "@/lib/schema";
+import { courses, enrollments, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { enrollLearnerAction } from "@/lib/enrollment-actions";
 
@@ -16,9 +16,20 @@ export default async function AdminEnrollPage() {
   }
 
   const db = await getDb();
-  const [courseList, learners] = await Promise.all([
+  const [courseList, learners, currentEnrollments] = await Promise.all([
     db.select({ id: courses.id, title: courses.title }).from(courses).orderBy(courses.createdAt),
     db.select({ id: users.id, email: users.email }).from(users).where(eq(users.role, "learner")),
+    db
+      .select({
+        courseId: courses.id,
+        courseTitle: courses.title,
+        learnerEmail: users.email,
+      })
+      .from(enrollments)
+      .leftJoin(courses, eq(enrollments.courseId, courses.id))
+      .leftJoin(users, eq(enrollments.userId, users.id))
+      .where(eq(users.role, "learner"))
+      .orderBy(courses.title, users.email),
   ]);
 
   return (
@@ -85,8 +96,33 @@ export default async function AdminEnrollPage() {
           </button>
         </form>
         <p className="text-xs text-muted-foreground">
-          This form only enrolls existing learners into existing courses. Use Roster to create users first.
+          This form only enrolls existing learners into existing courses. Use Roster to create users first. Duplicate enrollments are prevented.
         </p>
+      </div>
+
+      <div className="space-y-2 rounded-2xl border border-border/70 bg-card/80 p-5">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Current enrollments</p>
+          <p className="text-xs text-muted-foreground">Learners already enrolled per course.</p>
+        </div>
+        {currentEnrollments.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No enrollments yet.</p>
+        ) : (
+          <div className="overflow-hidden rounded-md border border-border/70">
+            <div className="grid grid-cols-[2fr_2fr] bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <span>Course</span>
+              <span>Learner</span>
+            </div>
+            <div className="divide-y divide-border bg-background/80 text-sm text-foreground">
+              {currentEnrollments.map((row) => (
+                <div key={`${row.courseId}-${row.learnerEmail}`} className="grid grid-cols-[2fr_2fr] items-center px-3 py-2">
+                  <span className="font-semibold">{row.courseTitle}</span>
+                  <span>{row.learnerEmail}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
