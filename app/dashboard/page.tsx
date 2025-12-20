@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { checkDatabaseConnection, getDb } from "@/lib/db";
@@ -12,6 +14,10 @@ export default async function DashboardPage() {
     checkDatabaseConnection(),
     getCurrentUser(),
   ]);
+
+  if (user?.role === "admin") {
+    redirect("/admin");
+  }
 
   const db = user ? await getDb() : null;
 
