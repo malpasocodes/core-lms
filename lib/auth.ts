@@ -20,77 +20,8 @@ export type Role = (typeof roleEnum.enumValues)[number];
 
 let ensured = false;
 async function ensureAuthTables() {
-  if (ensured) return;
-  const db = await getDb();
-  // Minimal, idempotent schema creation for demo environments without migrations.
-  await db.execute(sql`CREATE TYPE IF NOT EXISTS user_role AS ENUM ('learner', 'instructor', 'admin');`);
-  await db.execute(sql`CREATE TYPE IF NOT EXISTS content_type AS ENUM ('page', 'link');`);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id text PRIMARY KEY,
-      email text NOT NULL UNIQUE,
-      password_hash text NOT NULL,
-      role user_role NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-  `);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id text PRIMARY KEY,
-      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      expires_at timestamptz NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-  `);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS courses (
-      id text PRIMARY KEY,
-      title text NOT NULL,
-      description text,
-      instructor_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      published text NOT NULL DEFAULT 'false',
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-  `);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS enrollments (
-      id text PRIMARY KEY,
-      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      course_id text NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-      enrolled_at timestamptz NOT NULL DEFAULT now(),
-      CONSTRAINT enrollments_user_course_unique UNIQUE (user_id, course_id)
-    );
-  `);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS modules (
-      id text PRIMARY KEY,
-      course_id text NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-      title text NOT NULL,
-      "order" integer NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-  `);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS content_items (
-      id text PRIMARY KEY,
-      module_id text NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
-      type content_type NOT NULL,
-      title text NOT NULL,
-      content text NOT NULL,
-      "order" integer NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT now()
-    );
-  `);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS completions (
-      id text PRIMARY KEY,
-      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      content_item_id text NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
-      completed_at timestamptz NOT NULL DEFAULT now(),
-      CONSTRAINT completions_user_item_unique UNIQUE (user_id, content_item_id)
-    );
-  `);
   ensured = true;
+  return;
 }
 
 function createId() {
