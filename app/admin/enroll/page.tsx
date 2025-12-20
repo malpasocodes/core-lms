@@ -32,6 +32,13 @@ export default async function AdminEnrollPage() {
       .orderBy(courses.title, users.email),
   ]);
 
+  const enrollmentMap = courseList.map((course) => ({
+    ...course,
+    learners: currentEnrollments
+      .filter((row) => row.courseId === course.id && row.learnerEmail)
+      .map((row) => row.learnerEmail as string),
+  }));
+
   return (
     <div className="space-y-6">
       <div>
@@ -103,24 +110,41 @@ export default async function AdminEnrollPage() {
       <div className="space-y-2 rounded-2xl border border-border/70 bg-card/80 p-5">
         <div>
           <p className="text-sm font-semibold text-foreground">Current enrollments</p>
-          <p className="text-xs text-muted-foreground">Learners already enrolled per course.</p>
+          <p className="text-xs text-muted-foreground">Expand a course to view enrolled learners.</p>
         </div>
-        {currentEnrollments.length === 0 ? (
+        {enrollmentMap.every((c) => c.learners.length === 0) ? (
           <p className="text-sm text-muted-foreground">No enrollments yet.</p>
         ) : (
-          <div className="overflow-hidden rounded-md border border-border/70">
-            <div className="grid grid-cols-[2fr_2fr] bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <span>Course</span>
-              <span>Learner</span>
-            </div>
-            <div className="divide-y divide-border bg-background/80 text-sm text-foreground">
-              {currentEnrollments.map((row) => (
-                <div key={`${row.courseId}-${row.learnerEmail}`} className="grid grid-cols-[2fr_2fr] items-center px-3 py-2">
-                  <span className="font-semibold">{row.courseTitle}</span>
-                  <span>{row.learnerEmail}</span>
-                </div>
-              ))}
-            </div>
+          <div className="space-y-2">
+            {enrollmentMap.map((course) => (
+              <details
+                key={course.id}
+                className="overflow-hidden rounded-md border border-border/70 bg-background/80 text-sm text-foreground"
+              >
+                <summary className="flex cursor-pointer items-center justify-between px-3 py-2">
+                  <div className="space-y-0.5">
+                    <span className="font-semibold">{course.title}</span>
+                    <p className="text-[11px] text-muted-foreground font-mono">{course.id}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {course.learners.length} enrolled
+                  </span>
+                </summary>
+                {course.learners.length === 0 ? (
+                  <div className="border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                    No learners enrolled.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-border border-t border-border/70">
+                    {course.learners.map((email) => (
+                      <li key={email} className="px-3 py-2 text-sm">
+                        {email}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </details>
+            ))}
           </div>
         )}
       </div>
