@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { checkDatabaseConnection, getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { courses, enrollments, users } from "@/lib/schema";
+import { courses, enrollments } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { CourseForm } from "./_components/course-form";
 import { CourseList } from "./_components/course-list";
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
 
   const db = user ? await getDb() : null;
 
-  const [ownedCourses, allCourses, learnerCourses, instructorOptions] =
+  const [ownedCourses, learnerCourses] =
     user && db
       ? await Promise.all([
           db
@@ -32,7 +32,6 @@ export default async function DashboardPage() {
             })
             .from(courses)
             .where(eq(courses.instructorId, user.id)),
-          db.select({ id: courses.id, title: courses.title, published: courses.published }).from(courses),
           db
             .select({
               id: courses.id,
@@ -42,14 +41,8 @@ export default async function DashboardPage() {
             .from(enrollments)
             .leftJoin(courses, eq(enrollments.courseId, courses.id))
             .where(eq(enrollments.userId, user.id)),
-          user.role === "admin"
-            ? db
-                .select({ id: users.id, email: users.email })
-                .from(users)
-                .where(eq(users.role, "instructor"))
-            : [],
         ])
-      : [[], [], [], []];
+      : [[], []];
 
   return (
     <div className="space-y-6">
@@ -116,12 +109,6 @@ export default async function DashboardPage() {
                 emptyText="No courses yet. Create one to get started."
                 courses={ownedCourses}
               />
-            ) : user?.role === "admin" ? (
-              <CourseList
-                heading="All courses"
-                emptyText="No courses yet."
-                courses={allCourses}
-              />
             ) : (
               <CourseList
                 heading="Enrolled courses"
@@ -134,21 +121,6 @@ export default async function DashboardPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Instructor Tools</CardTitle>
-            <CardDescription>
-              Authoring and grading tools arrive in Phases 5–14.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p className="rounded-lg border border-dashed border-border/70 bg-muted/40 px-3 py-2">
-              Placeholder: Create courses, add modules, and manage submissions
-              will live here once roles and permissions land.
-            </p>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader>
             <CardTitle>Next Steps</CardTitle>
