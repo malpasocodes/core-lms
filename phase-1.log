@@ -45,6 +45,14 @@ Admin UX Updates
 - Added admin-only Enroll menu to enroll learners into courses
 - Added simple admin dashboard with course list
 - Deployed successfully
+Instructor UX Updates
+- Simplified instructor dashboard layout and nav
+- Added modules management page with view/create/edit/delete
+- Added content management page with view/create/edit/delete
+- Courses page links inline tabs for Modules and Content
+Fixes
+- Admin nav simplified (Admin, Course, Logout) with tabs for Modules/Content accessible from Course
+- Enrollments grouped by course on admin enroll page for clarity
 
 Progress Tracking (Phase 7)
 - Added completions table and learner mark-complete action
