@@ -8,6 +8,10 @@ import { eq } from "drizzle-orm";
 import { CourseForm } from "@/app/dashboard/_components/course-form";
 import { deleteCourseAction, updateCourseAction } from "@/lib/course-actions";
 
+function isInstructor(user: { role: string }) {
+  return user.role === "instructor";
+}
+
 export default async function CoursesPage() {
   const user = await getCurrentUser();
   if (!user) {
@@ -43,6 +47,22 @@ export default async function CoursesPage() {
             ? "Admins can create, edit, and delete courses. Instructors see only their assigned courses."
             : "Your assigned courses are listed below."}
         </p>
+        {(isAdmin || isInstructor(user)) && (
+          <div className="flex items-center gap-3 text-sm font-semibold text-muted-foreground">
+            <a
+              href="/courses/modules"
+              className="rounded-md border border-border px-3 py-1 text-foreground hover:bg-background/70"
+            >
+              Modules
+            </a>
+            <a
+              href="/courses/content"
+              className="rounded-md border border-border px-3 py-1 text-foreground hover:bg-background/70"
+            >
+              Content
+            </a>
+          </div>
+        )}
       </div>
 
       <Card>
