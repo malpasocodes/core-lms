@@ -48,6 +48,89 @@ export async function createModuleAction(formData: FormData) {
   redirect(`/courses/${courseId}`);
 }
 
+export async function updateModuleAction(formData: FormData) {
+  const moduleId = (formData.get("moduleId") as string | null)?.trim();
+  const title = (formData.get("title") as string | null)?.trim();
+  const orderRaw = (formData.get("order") as string | null)?.trim();
+  const newOrder = orderRaw ? Number(orderRaw) : undefined;
+
+  if (!moduleId || !title) {
+    redirect("/courses/modules?error=Missing%20module%20or%20title");
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const db = await getDb();
+  const moduleRow = await db
+    .select({
+      moduleId: modules.id,
+      courseId: modules.courseId,
+      instructorId: courses.instructorId,
+    })
+    .from(modules)
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(modules.id, moduleId))
+    .limit(1);
+
+  const module = moduleRow[0];
+  if (!module || !module.courseId) {
+    redirect("/courses/modules?error=Module%20not%20found");
+  }
+
+  const isOwner = user.role === "instructor" && user.id === module.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect("/courses/modules?error=Not%20authorized");
+  }
+
+  await db
+    .update(modules)
+    .set({
+      title,
+      ...(typeof newOrder === "number" && !Number.isNaN(newOrder) ? { order: newOrder } : {}),
+    })
+    .where(eq(modules.id, moduleId));
+
+  redirect("/courses/modules?notice=Module%20updated");
+}
+
+export async function deleteModuleAction(formData: FormData) {
+  const moduleId = (formData.get("moduleId") as string | null)?.trim();
+  if (!moduleId) {
+    redirect("/courses/modules?error=Missing%20module");
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const db = await getDb();
+  const moduleRow = await db
+    .select({
+      moduleId: modules.id,
+      courseId: modules.courseId,
+      instructorId: courses.instructorId,
+    })
+    .from(modules)
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(modules.id, moduleId))
+    .limit(1);
+
+  const module = moduleRow[0];
+  if (!module || !module.courseId) {
+    redirect("/courses/modules?error=Module%20not%20found");
+  }
+
+  const isOwner = user.role === "instructor" && user.id === module.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect("/courses/modules?error=Not%20authorized");
+  }
+
+  await db.delete(modules).where(eq(modules.id, moduleId));
+  redirect("/courses/modules?notice=Module%20deleted");
+}
+
 export async function createContentItemAction(formData: FormData) {
   const moduleId = (formData.get("moduleId") as string | null)?.trim();
   const title = (formData.get("title") as string | null)?.trim();
