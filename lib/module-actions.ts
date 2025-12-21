@@ -192,3 +192,94 @@ export async function createContentItemAction(formData: FormData) {
 
   redirect(`/courses/${course.id}`);
 }
+
+export async function updateContentItemAction(formData: FormData) {
+  const itemId = (formData.get("itemId") as string | null)?.trim();
+  const title = (formData.get("title") as string | null)?.trim();
+  const type = (formData.get("type") as string | null)?.trim();
+  const content = (formData.get("content") as string | null)?.trim();
+
+  if (!itemId || !title || !type || !content) {
+    redirect("/courses/content?error=Missing%20fields");
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const db = await getDb();
+  const itemRow = await db
+    .select({
+      id: contentItems.id,
+      moduleId: contentItems.moduleId,
+      courseId: courses.id,
+      instructorId: courses.instructorId,
+    })
+    .from(contentItems)
+    .leftJoin(modules, eq(contentItems.moduleId, modules.id))
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(contentItems.id, itemId))
+    .limit(1);
+
+  const item = itemRow[0];
+  if (!item || !item.courseId) {
+    redirect("/courses/content?error=Content%20not%20found");
+  }
+
+  const isOwner = user.role === "instructor" && user.id === item.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect("/courses/content?error=Not%20authorized");
+  }
+
+  if (type !== "page" && type !== "link") {
+    redirect("/courses/content?error=Invalid%20type");
+  }
+
+  await db
+    .update(contentItems)
+    .set({
+      title,
+      type,
+      content,
+    })
+    .where(eq(contentItems.id, itemId));
+
+  redirect("/courses/content?notice=Content%20updated");
+}
+
+export async function deleteContentItemAction(formData: FormData) {
+  const itemId = (formData.get("itemId") as string | null)?.trim();
+  if (!itemId) {
+    redirect("/courses/content?error=Missing%20content%20item");
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const db = await getDb();
+  const itemRow = await db
+    .select({
+      id: contentItems.id,
+      courseId: courses.id,
+      instructorId: courses.instructorId,
+    })
+    .from(contentItems)
+    .leftJoin(modules, eq(contentItems.moduleId, modules.id))
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(contentItems.id, itemId))
+    .limit(1);
+
+  const item = itemRow[0];
+  if (!item || !item.courseId) {
+    redirect("/courses/content?error=Content%20not%20found");
+  }
+
+  const isOwner = user.role === "instructor" && user.id === item.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect("/courses/content?error=Not%20authorized");
+  }
+
+  await db.delete(contentItems).where(eq(contentItems.id, itemId));
+  redirect("/courses/content?notice=Content%20deleted");
+}

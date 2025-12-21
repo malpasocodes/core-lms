@@ -25,13 +25,20 @@ export function PrimaryNav({ user }: PrimaryNavProps) {
   const navItems: NavItem[] = user?.role === "admin"
     ? [
         { label: "Admin", href: "/admin" },
-        { label: "Courses", href: "/courses" },
+        { label: "Course", href: "/courses" },
+        { label: "Content", href: "/courses/content" },
         { label: "Enroll", href: "/admin/enroll" },
       ]
-    : [
-        { label: "Dashboard", href: "/dashboard" },
-        { label: "Courses", href: "/courses" },
-      ];
+    : user?.role === "instructor"
+      ? [
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Course", href: "/courses" },
+          { label: "Content", href: "/courses/content" },
+        ]
+      : [
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Courses", href: "/courses" },
+        ];
 
   if (user?.role === "admin") {
     navItems.push({ label: "Roster", href: "/admin/roster" });
