@@ -81,3 +81,8 @@ Phase 8 – Assignments (Outcome collection)
 - Admin/course instructor can create assignments from course page; learners see status
 - Assignment detail page supports learner submission (text or file URL) and instructor/admin submission list
 - Deployed successfully
+
+Phase 9 – Grading & Migrations
+- Added grades table (immutable, one per submission, 0–100) with audit fields and instructor-only grading UI/action
+- Wired Drizzle migration tooling (drizzle-kit, tsx runner) and added SQL migrations for grades and completions
+- Applied migrations to Neon; course pages now surface grades for learners and instructors/admins

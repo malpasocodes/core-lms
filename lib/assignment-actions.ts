@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { assignments, courses, enrollments, submissions } from "@/lib/schema";
+import { assignments, courses, enrollments, submissions, grades } from "@/lib/schema";
 
 export async function createAssignmentAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -108,4 +108,79 @@ export async function submitAssignmentAction(formData: FormData) {
     });
 
   redirect(`/courses/${assignment.courseId}/assignments/${assignmentId}?notice=Submission%20saved`);
+}
+
+export async function gradeSubmissionAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const submissionId = (formData.get("submissionId") as string | null)?.trim();
+  const assignmentId = (formData.get("assignmentId") as string | null)?.trim();
+  const scoreValue = (formData.get("score") as string | null)?.trim() ?? "";
+
+  if (!submissionId || !assignmentId) {
+    redirect("/dashboard?error=Missing%20submission%20or%20assignment");
+  }
+
+  const db = await getDb();
+  const assignmentRow = await db
+    .select({
+      id: assignments.id,
+      courseId: assignments.courseId,
+      instructorId: courses.instructorId,
+    })
+    .from(assignments)
+    .leftJoin(courses, eq(assignments.courseId, courses.id))
+    .where(eq(assignments.id, assignmentId))
+    .limit(1);
+
+  const assignment = assignmentRow[0];
+  if (!assignment) {
+    redirect("/dashboard?error=Assignment%20not%20found");
+  }
+
+  const score = Number(scoreValue);
+  const isIntScore = Number.isInteger(score) && score >= 0 && score <= 100;
+  if (!isIntScore) {
+    redirect(
+      `/courses/${assignment.courseId}/assignments/${assignmentId}?error=Score%20must%20be%20an%20integer%200-100`
+    );
+  }
+
+  const submission = await db
+    .select({
+      id: submissions.id,
+      assignmentId: submissions.assignmentId,
+    })
+    .from(submissions)
+    .where(eq(submissions.id, submissionId))
+    .limit(1);
+
+  if (!submission.length || submission[0].assignmentId !== assignmentId) {
+    redirect("/dashboard?error=Submission%20not%20found");
+  }
+
+  const isOwner = user.role === "instructor" && user.id === assignment.instructorId;
+  if (!isOwner) {
+    redirect(`/courses/${assignment.courseId}/assignments/${assignmentId}?error=Not%20authorized`);
+  }
+
+  const existingGrade = await db.query.grades.findFirst({
+    where: (g, { eq }) => eq(g.submissionId, submissionId),
+  });
+  if (existingGrade) {
+    redirect(
+      `/courses/${assignment.courseId}/assignments/${assignmentId}?error=Submission%20already%20graded`
+    );
+  }
+
+  await db.insert(grades).values({
+    id: crypto.randomUUID(),
+    submissionId,
+    score,
+    gradedBy: user.id,
+    gradedAt: new Date(),
+  });
+
+  redirect(`/courses/${assignment.courseId}/assignments/${assignmentId}?notice=Grade%20saved`);
 }

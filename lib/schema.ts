@@ -133,3 +133,23 @@ export const completions = pgTable(
 export type Completion = typeof completions.$inferSelect;
 export type Assignment = typeof assignments.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
+
+export const grades = pgTable(
+  "grades",
+  {
+    id: text("id").primaryKey(),
+    submissionId: text("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    gradedBy: text("graded_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    gradedAt: timestamp("graded_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueSubmission: uniqueIndex("grades_submission_unique").on(table.submissionId),
+  })
+);
+
+export type Grade = typeof grades.$inferSelect;

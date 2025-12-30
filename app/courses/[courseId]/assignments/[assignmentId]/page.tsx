@@ -3,10 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 
-import { submitAssignmentAction } from "@/lib/assignment-actions";
+import { gradeSubmissionAction, submitAssignmentAction } from "@/lib/assignment-actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { assignments, courses, submissions, users } from "@/lib/schema";
+import { assignments, courses, grades, submissions, users } from "@/lib/schema";
 
 type AssignmentPageProps = {
   params: Promise<{ courseId: string; assignmentId: string }>;
@@ -59,6 +59,12 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
           where: (s, { and, eq }) => and(eq(s.assignmentId, assignmentId), eq(s.userId, user.id)),
         })
       : null;
+  const learnerGrade =
+    user.role === "learner" && learnerSubmission
+      ? await db.query.grades.findFirst({
+          where: (g, { eq }) => eq(g.submissionId, learnerSubmission.id),
+        })
+      : null;
 
   const allSubmissions =
     isAdmin || isOwner
@@ -70,9 +76,13 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
             submissionText: submissions.submissionText,
             fileUrl: submissions.fileUrl,
             email: users.email,
+            gradeScore: grades.score,
+            gradedAt: grades.gradedAt,
+            gradedBy: grades.gradedBy,
           })
           .from(submissions)
           .leftJoin(users, eq(submissions.userId, users.id))
+          .leftJoin(grades, eq(grades.submissionId, submissions.id))
           .where(eq(submissions.assignmentId, assignmentId))
       : [];
 
@@ -107,6 +117,14 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
                 {learnerSubmission ? "Submitted" : "Not submitted"}
               </span>
             </div>
+            {learnerGrade ? (
+              <div className="flex items-center justify-between rounded-md border border-border/60 bg-card/70 px-3 py-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Grade
+                </span>
+                <span className="text-sm font-semibold text-foreground">{learnerGrade.score} / 100</span>
+              </div>
+            ) : null}
             {learnerSubmission ? (
               <div className="space-y-2 text-sm text-foreground">
                 {learnerSubmission.submissionText ? (
@@ -182,6 +200,49 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
                         {sub.submittedAt?.toString() ?? ""}
                       </span>
                     </div>
+                    {typeof sub.gradeScore === "number" ? (
+                      <div className="flex items-center justify-between rounded-md border border-border/60 bg-card/70 px-3 py-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Grade
+                        </span>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-foreground">{sub.gradeScore} / 100</p>
+                          {sub.gradedAt ? (
+                            <p className="text-[11px] text-muted-foreground">
+                              Graded {sub.gradedAt.toString()}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : isOwner ? (
+                      <form action={gradeSubmissionAction} className="space-y-2 rounded-md border border-border/60 bg-card/70 px-3 py-2">
+                        <input type="hidden" name="submissionId" value={sub.id} />
+                        <input type="hidden" name="assignmentId" value={assignmentId} />
+                        <div className="flex items-center justify-between gap-3">
+                          <label className="text-xs font-semibold text-foreground" htmlFor={`grade-${sub.id}`}>
+                            Grade (0-100)
+                          </label>
+                          <input
+                            id={`grade-${sub.id}`}
+                            name="score"
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            required
+                            className="w-24 rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          className="w-full rounded-md bg-foreground px-3 py-2 text-xs font-semibold uppercase tracking-wide text-background hover:bg-foreground/90"
+                        >
+                          Save grade
+                        </button>
+                      </form>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Not graded yet.</p>
+                    )}
                     {sub.submissionText ? (
                       <p className="whitespace-pre-wrap text-foreground">{sub.submissionText}</p>
                     ) : null}
