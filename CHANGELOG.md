@@ -23,6 +23,17 @@
 - `app/courses/modules/_components/delete-module-form.tsx`
 - `app/courses/content/_components/delete-content-form.tsx`
 
+### Simplify Admin Courses Page
+- Removed Modules and Content tabs from admin courses page
+- Deleted `/courses/modules` and `/courses/content` routes
+- Instructors manage modules/content from within course detail pages only
+
+**Files deleted:**
+- `app/courses/modules/page.tsx`
+- `app/courses/modules/_components/delete-module-form.tsx`
+- `app/courses/content/page.tsx`
+- `app/courses/content/_components/delete-content-form.tsx`
+
 ### Admin Roster Edit User
 - Added Edit button alongside Delete button for each user
 - Edit dialog shows user details (email, role, created date) as read-only

@@ -53,22 +53,6 @@ export default async function CoursesPage() {
             ? "Admins can create, edit, and delete courses. Instructors see only their assigned courses."
             : "Your assigned courses are listed below."}
         </p>
-        {(isAdmin || isInstructor(user)) && (
-          <div className="flex items-center gap-3 text-sm font-semibold text-muted-foreground">
-            <Link
-              href="/courses/modules"
-              className="rounded-md border border-border px-3 py-1 text-foreground hover:bg-background/70"
-            >
-              Modules
-            </Link>
-            <Link
-              href="/courses/content"
-              className="rounded-md border border-border px-3 py-1 text-foreground hover:bg-background/70"
-            >
-              Content
-            </Link>
-          </div>
-        )}
       </div>
 
       <Card>
