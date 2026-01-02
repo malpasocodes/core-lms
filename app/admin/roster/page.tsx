@@ -1,12 +1,41 @@
+import Link from "next/link";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { createUserAction, deleteUserAction } from "@/lib/admin-actions";
-import { eq } from "drizzle-orm";
 import { PasswordInput } from "@/components/password-input";
 
-export default async function AdminRosterPage() {
+const ROLES = ["learner", "instructor", "admin"] as const;
+type Role = (typeof ROLES)[number];
+
+function TabLink({ role, active, count }: { role: Role; active: boolean; count: number }) {
+  return (
+    <Link
+      href={`/admin/roster?role=${role}`}
+      className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+        active
+          ? "text-foreground"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      <span className="capitalize">{role}s</span>
+      <span className="ml-2 text-xs text-muted-foreground">({count})</span>
+      {active && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
+      )}
+    </Link>
+  );
+}
+
+export default async function AdminRosterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ role?: string }>;
+}) {
+  const params = await searchParams;
+  const activeRole = ROLES.includes(params.role as Role) ? (params.role as Role) : "learner";
+
   const db = await getDb();
-  const userList = await db
+  const allUsers = await db
     .select({
       id: users.id,
       email: users.email,
@@ -15,6 +44,14 @@ export default async function AdminRosterPage() {
     })
     .from(users)
     .orderBy(users.createdAt);
+
+  const usersByRole = {
+    learner: allUsers.filter((u) => u.role === "learner"),
+    instructor: allUsers.filter((u) => u.role === "instructor"),
+    admin: allUsers.filter((u) => u.role === "admin"),
+  };
+
+  const filteredUsers = usersByRole[activeRole];
 
   return (
     <div className="space-y-6">
@@ -26,25 +63,43 @@ export default async function AdminRosterPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="rounded-2xl border border-border/70 bg-card/80 p-4">
-          <h2 className="text-lg font-semibold text-foreground">Users</h2>
-          <div className="mt-3 divide-y divide-border overflow-hidden rounded-md border border-border/60 bg-background/80 text-sm">
-            {userList.map((user) => (
-              <div key={user.id} className="flex items-center justify-between px-3 py-2">
-                <div>
-                  <p className="font-medium text-foreground">{user.email}</p>
-                  <p className="text-xs text-muted-foreground">{user.role}</p>
-                </div>
-                <form action={deleteUserAction}>
-                  <input type="hidden" name="userId" value={user.id} />
-                  <button
-                    type="submit"
-                    className="rounded-md border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted"
-                  >
-                    Delete
-                  </button>
-                </form>
-              </div>
+          <div className="flex items-center border-b border-border/60">
+            {ROLES.map((role) => (
+              <TabLink
+                key={role}
+                role={role}
+                active={activeRole === role}
+                count={usersByRole[role].length}
+              />
             ))}
+          </div>
+
+          <div className="mt-3 divide-y divide-border overflow-hidden rounded-md border border-border/60 bg-background/80 text-sm">
+            {filteredUsers.length === 0 ? (
+              <div className="px-3 py-4 text-center text-muted-foreground">
+                No {activeRole}s found.
+              </div>
+            ) : (
+              filteredUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between px-3 py-2">
+                  <div>
+                    <p className="font-medium text-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.createdAt.toLocaleDateString()}
+                    </p>
+                  </div>
+                  <form action={deleteUserAction}>
+                    <input type="hidden" name="userId" value={user.id} />
+                    <button
+                      type="submit"
+                      className="rounded-md border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
