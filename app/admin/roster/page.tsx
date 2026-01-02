@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DeleteUserButton } from "./_components/delete-user-button";
+import { EditUserButton } from "./_components/edit-user-button";
 
 const ROLES = ["learner", "instructor", "admin"] as const;
 type Role = (typeof ROLES)[number];
@@ -92,7 +93,15 @@ export default async function AdminRosterPage({
                       {user.createdAt.toLocaleDateString()}
                     </p>
                   </div>
-                  <DeleteUserButton userId={user.id} email={user.email} />
+                  <div className="flex items-center gap-2">
+                    <EditUserButton
+                      userId={user.id}
+                      email={user.email}
+                      role={user.role}
+                      createdAt={user.createdAt}
+                    />
+                    <DeleteUserButton userId={user.id} email={user.email} />
+                  </div>
                 </div>
               ))
             )}

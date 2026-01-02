@@ -23,6 +23,17 @@
 - `app/courses/modules/_components/delete-module-form.tsx`
 - `app/courses/content/_components/delete-content-form.tsx`
 
+### Admin Roster Edit User
+- Added Edit button alongside Delete button for each user
+- Edit dialog shows user details (email, role, created date) as read-only
+- Admins can change user passwords via the edit dialog
+- Added Dialog component via `npx shadcn@latest add dialog`
+- Added `updateUserPasswordAction` server action
+
+**Files created:**
+- `components/ui/dialog.tsx`
+- `app/admin/roster/_components/edit-user-button.tsx`
+
 ### Admin Roster Tabs
 - Added role-based tabs (Learner/Instructor/Admin) to admin roster page
 - Implemented URL-based tab navigation using query params

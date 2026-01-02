@@ -58,3 +58,26 @@ export async function deleteUserAction(formData: FormData) {
 
   redirect("/admin/roster?notice=User%20deleted");
 }
+
+export async function updateUserPasswordAction(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin) redirect("/auth/login");
+
+  const userId = (formData.get("userId") as string | null)?.trim();
+  const newPassword = (formData.get("newPassword") as string | null)?.trim();
+
+  if (!userId || !newPassword) {
+    redirect("/admin/roster?error=Missing%20fields");
+  }
+  if (newPassword.length < 8) {
+    redirect("/admin/roster?error=Password%20must%20be%20at%20least%208%20characters");
+  }
+
+  const db = await getDb();
+  await db
+    .update(users)
+    .set({ passwordHash: hashSync(newPassword, 12) })
+    .where(eq(users.id, userId));
+
+  redirect("/admin/roster?notice=Password%20updated");
+}
