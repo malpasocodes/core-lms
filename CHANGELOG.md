@@ -2,6 +2,20 @@
 
 ## 2026-01-01
 
+### Course Page Tab Navigation
+- Organized course page into tab-based sections:
+  - Overview: Course summary with module/assignment counts
+  - Modules: Full module management with content items
+  - Assignments: Assignment list and creation form
+  - Create Module: Dedicated module creation section (instructors only)
+- Added horizontal tab navigation for course pages
+- URL-based navigation using query params (?tab=modules)
+
+**Files created:**
+- `app/courses/[courseId]/_components/course-tabs.tsx`
+
+**Note:** Added shadcn/ui sidebar components (sidebar, sheet, tooltip, skeleton, use-mobile hook) for potential future use.
+
 ### shadcn/ui Full Refactor
 - Standardized all UI components across the application using shadcn/ui
 - Added Tabs and Checkbox components via `npx shadcn@latest add`
