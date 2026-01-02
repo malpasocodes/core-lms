@@ -23,6 +23,12 @@
 - `app/courses/modules/_components/delete-module-form.tsx`
 - `app/courses/content/_components/delete-content-form.tsx`
 
+### Clean Up Course Detail Page
+- Removed Completion summary section from course detail page
+- Removed Enrolled learners section from course detail page
+- Removed Enroll a learner form from course detail page
+- Enrollment management should be handled elsewhere (admin)
+
 ### Simplify Admin Courses Page
 - Removed Modules and Content tabs from admin courses page
 - Deleted `/courses/modules` and `/courses/content` routes

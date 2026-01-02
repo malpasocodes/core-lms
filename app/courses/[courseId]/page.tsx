@@ -11,13 +11,11 @@ import {
   contentItems,
   enrollments,
   modules,
-  users,
   completions,
   assignments,
   submissions,
 } from "@/lib/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { enrollLearnerAction } from "@/lib/enrollment-actions";
 import { createContentItemAction, createModuleAction } from "@/lib/module-actions";
 import { createAssignmentAction } from "@/lib/assignment-actions";
 
@@ -97,7 +95,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     acc[id] = itemRows.filter((item) => item.moduleId === id);
     return acc;
   }, {});
-  const totalItems = itemRows.length;
 
   const assignmentRows = await db
     .select({
@@ -161,30 +158,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
           ).map((c) => c.contentItemId)
         )
       : new Set<string>();
-
-  const completionByUser =
-    (isAdmin || isOwner) && itemRows.length
-      ? await db
-          .select({
-            userId: completions.userId,
-            count: sql<number>`count(*)`,
-          })
-          .from(completions)
-          .where(inArray(completions.contentItemId, itemRows.map((i) => i.id)))
-          .groupBy(completions.userId)
-      : [];
-  const completionMap = new Map<string, number>(completionByUser.map((c) => [c.userId, Number(c.count || 0)]));
-
-  const enrolledLearners =
-    (isAdmin || isOwner) &&
-    (await db
-      .select({
-        email: users.email,
-        id: users.id,
-      })
-      .from(enrollments)
-      .leftJoin(users, eq(enrollments.userId, users.id))
-      .where(eq(enrollments.courseId, courseId)));
 
   return (
     <div className="space-y-4">
@@ -374,68 +347,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
         </div>
       ) : null}
 
-      {canEdit ? (
-        <div className="rounded-2xl border border-border/80 bg-background/80 px-6 py-6 space-y-3">
-          <h2 className="text-lg font-semibold text-foreground">Completion summary</h2>
-          <p className="text-sm text-muted-foreground">Read-only view of enrolled learners and their completion counts.</p>
-          {enrolledLearners && enrolledLearners.length ? (
-            <div className="divide-y divide-border rounded-md border border-border/60 bg-card/80 text-sm">
-              {enrolledLearners.map((learner) => {
-                const completed = completionMap.get(learner.id ?? "") || 0;
-                return (
-                  <div key={learner.id} className="flex items-center justify-between px-3 py-2">
-                    <span className="text-foreground">{learner.email}</span>
-                    <span className="text-xs font-semibold text-foreground">
-                      {completed}/{totalItems || 0}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No enrolled learners yet.</p>
-          )}
-        </div>
-      ) : null}
-
-      {canEdit ? (
-        <div className="grid gap-4 md:grid-cols-[1.5fr_1fr]">
-          <Card>
-            <CardHeader>
-              <CardTitle>Enrolled learners</CardTitle>
-              <CardDescription>Read-only list of enrolled learners.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              {enrolledLearners && enrolledLearners.length > 0 ? (
-                <ul className="list-disc space-y-1 pl-4">
-                  {enrolledLearners.map((row) => (
-                    <li key={row.email}>{row.email}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No learners enrolled yet.</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Enroll a learner</CardTitle>
-              <CardDescription>Enroll by learner email (must already exist as a learner).</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form action={enrollLearnerAction} className="space-y-3">
-                <input type="hidden" name="courseId" value={courseId} />
-                <div className="space-y-1">
-                  <Label htmlFor="email">Learner email</Label>
-                  <Input id="email" name="email" type="email" required />
-                </div>
-                <Button type="submit">Enroll learner</Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
     </div>
   );
 }
