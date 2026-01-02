@@ -3,6 +3,11 @@
 import { useTransition } from "react";
 
 import { createCourseAction } from "@/lib/course-actions";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type InstructorOption = { id: string; email: string };
 
@@ -14,38 +19,22 @@ export function CourseForm({ instructors }: { instructors: InstructorOption[] })
   }
 
   return (
-    <form action={handleAction} className="space-y-3 rounded-lg border border-border/70 bg-card/80 px-4 py-4">
+    <form action={handleAction} className="space-y-3 text-sm">
       <div className="space-y-1">
-        <label htmlFor="title" className="text-xs font-semibold text-foreground">
-          Title
-        </label>
-        <input
-          id="title"
-          name="title"
-          required
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-        />
+        <Label htmlFor="title">Title</Label>
+        <Input id="title" name="title" required />
       </div>
       <div className="space-y-1">
-        <label htmlFor="description" className="text-xs font-semibold text-foreground">
-          Description
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={3}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-        />
+        <Label htmlFor="description">Description</Label>
+        <Textarea id="description" name="description" rows={3} />
       </div>
       <div className="space-y-1">
-        <label htmlFor="instructorId" className="text-xs font-semibold text-foreground">
-          Assign instructor
-        </label>
+        <Label htmlFor="instructorId">Assign instructor</Label>
         <select
           id="instructorId"
           name="instructorId"
           required
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+          className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
         >
           <option value="">Select instructor</option>
           {instructors.map((inst) => (
@@ -56,18 +45,14 @@ export function CourseForm({ instructors }: { instructors: InstructorOption[] })
         </select>
       </div>
       <div className="flex items-center gap-2 text-sm">
-        <input id="published" name="published" type="checkbox" className="h-4 w-4" />
-        <label htmlFor="published" className="text-sm text-foreground">
+        <Checkbox id="published" name="published" />
+        <Label htmlFor="published" className="text-sm font-normal">
           Mark as published
-        </label>
+        </Label>
       </div>
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90 disabled:cursor-not-allowed disabled:bg-muted"
-      >
+      <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Creating..." : "Create course"}
-      </button>
+      </Button>
     </form>
   );
 }

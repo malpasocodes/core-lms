@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { contentItems, courses, modules } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import {
-  createContentItemAction,
-  deleteContentItemAction,
-  updateContentItemAction,
-} from "@/lib/module-actions";
+import { createContentItemAction, updateContentItemAction } from "@/lib/module-actions";
+import { DeleteContentForm } from "./_components/delete-content-form";
 
 export default async function ContentPage() {
   const user = await getCurrentUser();
@@ -120,14 +121,12 @@ export default async function ContentPage() {
           <CardContent>
             <form action={createContentItemAction} className="space-y-3 text-sm">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="create-module">
-                  Module
-                </label>
+                <Label htmlFor="create-module">Module</Label>
                 <select
                   id="create-module"
                   name="moduleId"
                   required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   defaultValue=""
                 >
                   <option value="" disabled>
@@ -141,24 +140,15 @@ export default async function ContentPage() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="create-title">
-                  Title
-                </label>
-                <input
-                  id="create-title"
-                  name="title"
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                <Label htmlFor="create-title">Title</Label>
+                <Input id="create-title" name="title" required />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="create-type">
-                  Type
-                </label>
+                <Label htmlFor="create-type">Type</Label>
                 <select
                   id="create-type"
                   name="type"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   defaultValue="page"
                 >
                   <option value="page">Text page</option>
@@ -166,23 +156,12 @@ export default async function ContentPage() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="create-content">
-                  Content (text or URL)
-                </label>
-                <textarea
-                  id="create-content"
-                  name="content"
-                  rows={3}
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                <Label htmlFor="create-content">Content (text or URL)</Label>
+                <Textarea id="create-content" name="content" rows={3} required />
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-              >
+              <Button type="submit" className="w-full">
                 Create content
-              </button>
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -197,14 +176,12 @@ export default async function ContentPage() {
           <CardContent>
             <form action={updateContentItemAction} className="space-y-3 text-sm">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="edit-item">
-                  Content item
-                </label>
+                <Label htmlFor="edit-item">Content item</Label>
                 <select
                   id="edit-item"
                   name="itemId"
                   required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   defaultValue=""
                 >
                   <option value="" disabled>
@@ -218,24 +195,15 @@ export default async function ContentPage() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="edit-title">
-                  Title
-                </label>
-                <input
-                  id="edit-title"
-                  name="title"
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                <Label htmlFor="edit-title">Title</Label>
+                <Input id="edit-title" name="title" required />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="edit-type">
-                  Type
-                </label>
+                <Label htmlFor="edit-type">Type</Label>
                 <select
                   id="edit-type"
                   name="type"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   defaultValue="page"
                 >
                   <option value="page">Text page</option>
@@ -243,23 +211,12 @@ export default async function ContentPage() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="edit-content">
-                  Content
-                </label>
-                <textarea
-                  id="edit-content"
-                  name="content"
-                  rows={3}
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                <Label htmlFor="edit-content">Content</Label>
+                <Textarea id="edit-content" name="content" rows={3} required />
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-              >
+              <Button type="submit" className="w-full">
                 Update content
-              </button>
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -270,35 +227,7 @@ export default async function ContentPage() {
             <CardDescription>Removes the content item.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={deleteContentItemAction} className="space-y-3 text-sm">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="delete-item">
-                  Content item
-                </label>
-                <select
-                  id="delete-item"
-                  name="itemId"
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Select content
-                  </option>
-                  {contentList.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.title} ({item.courseTitle} / {item.moduleTitle})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-background hover:bg-destructive/90"
-              >
-                Delete content
-              </button>
-            </form>
+            <DeleteContentForm items={contentList} />
           </CardContent>
         </Card>
       </div>

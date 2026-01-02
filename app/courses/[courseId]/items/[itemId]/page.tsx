@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { completions, contentItems, courses, enrollments, modules } from "@/lib/schema";
@@ -120,13 +121,9 @@ export default async function CourseItemPage(props: ItemPageProps) {
           {user.role === "learner" ? (
             <form action={markContentCompleteAction}>
               <input type="hidden" name="itemId" value={itemId} />
-              <button
-                type="submit"
-                disabled={isCompleted}
-                className="rounded-md border border-border px-3 py-1 text-xs font-semibold text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:text-muted-foreground"
-              >
+              <Button type="submit" variant="outline" disabled={isCompleted}>
                 {isCompleted ? "Completed" : "Mark complete"}
-              </button>
+              </Button>
             </form>
           ) : null}
           {next ? (

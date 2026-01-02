@@ -1,12 +1,18 @@
 import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { courses, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { CourseForm } from "@/app/dashboard/_components/course-form";
-import { deleteCourseAction, updateCourseAction } from "@/lib/course-actions";
+import { updateCourseAction } from "@/lib/course-actions";
+import { DeleteCourseForm } from "./_components/delete-course-form";
 
 function isInstructor(user: { role: string }) {
   return user.role === "instructor";
@@ -49,18 +55,18 @@ export default async function CoursesPage() {
         </p>
         {(isAdmin || isInstructor(user)) && (
           <div className="flex items-center gap-3 text-sm font-semibold text-muted-foreground">
-            <a
+            <Link
               href="/courses/modules"
               className="rounded-md border border-border px-3 py-1 text-foreground hover:bg-background/70"
             >
               Modules
-            </a>
-            <a
+            </Link>
+            <Link
               href="/courses/content"
               className="rounded-md border border-border px-3 py-1 text-foreground hover:bg-background/70"
             >
               Content
-            </a>
+            </Link>
           </div>
         )}
       </div>
@@ -110,14 +116,12 @@ export default async function CoursesPage() {
             <CardContent>
               <form action={updateCourseAction} className="space-y-3 text-sm">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground" htmlFor="edit-course">
-                    Course
-                  </label>
+                  <Label htmlFor="edit-course">Course</Label>
                   <select
                     id="edit-course"
                     name="courseId"
                     required
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   >
                     <option value="">Select course</option>
                     {courseList.map((c) => (
@@ -128,36 +132,20 @@ export default async function CoursesPage() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground" htmlFor="edit-title">
-                    Title
-                  </label>
-                  <input
-                    id="edit-title"
-                    name="title"
-                    required
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                  />
+                  <Label htmlFor="edit-title">Title</Label>
+                  <Input id="edit-title" name="title" required />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground" htmlFor="edit-description">
-                    Description
-                  </label>
-                  <textarea
-                    id="edit-description"
-                    name="description"
-                    rows={2}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                  />
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea id="edit-description" name="description" rows={2} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground" htmlFor="edit-instructor">
-                    Instructor
-                  </label>
+                  <Label htmlFor="edit-instructor">Instructor</Label>
                   <select
                     id="edit-instructor"
                     name="instructorId"
                     required
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   >
                     <option value="">Select instructor</option>
                     {instructors.map((inst) => (
@@ -168,17 +156,14 @@ export default async function CoursesPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <input id="edit-published" name="published" type="checkbox" className="h-4 w-4" />
-                  <label htmlFor="edit-published" className="text-sm text-foreground">
+                  <Checkbox id="edit-published" name="published" />
+                  <Label htmlFor="edit-published" className="text-sm font-normal">
                     Published
-                  </label>
+                  </Label>
                 </div>
-                <button
-                  type="submit"
-                  className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-                >
+                <Button type="submit" className="w-full">
                   Update course
-                </button>
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -189,32 +174,7 @@ export default async function CoursesPage() {
               <CardDescription>Remove a course and its content.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={deleteCourseAction} className="space-y-3 text-sm">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground" htmlFor="delete-course">
-                    Course
-                  </label>
-                  <select
-                    id="delete-course"
-                    name="courseId"
-                    required
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                  >
-                    <option value="">Select course</option>
-                    {courseList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-background hover:bg-destructive/90"
-                >
-                  Delete course
-                </button>
-              </form>
+              <DeleteCourseForm courses={courseList} />
             </CardContent>
           </Card>
         </div>

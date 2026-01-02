@@ -1,11 +1,15 @@
 import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
-import { getDb, sql } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { courses, modules, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { createModuleAction, updateModuleAction, deleteModuleAction } from "@/lib/module-actions";
+import { createModuleAction, updateModuleAction } from "@/lib/module-actions";
+import { DeleteModuleForm } from "./_components/delete-module-form";
 
 export default async function ModulesPage() {
   const user = await getCurrentUser();
@@ -100,14 +104,12 @@ export default async function ModulesPage() {
           <CardContent>
             <form action={createModuleAction} className="space-y-3 text-sm">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="course-select">
-                  Course
-                </label>
+                <Label htmlFor="course-select">Course</Label>
                 <select
                   id="course-select"
                   name="courseId"
                   required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   defaultValue=""
                 >
                   <option value="" disabled>
@@ -121,22 +123,12 @@ export default async function ModulesPage() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="module-title">
-                  Module title
-                </label>
-                <input
-                  id="module-title"
-                  name="title"
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                <Label htmlFor="module-title">Module title</Label>
+                <Input id="module-title" name="title" required />
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-              >
+              <Button type="submit" className="w-full">
                 Create module
-              </button>
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -151,14 +143,12 @@ export default async function ModulesPage() {
           <CardContent>
             <form action={updateModuleAction} className="space-y-3 text-sm">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="edit-module">
-                  Module
-                </label>
+                <Label htmlFor="edit-module">Module</Label>
                 <select
                   id="edit-module"
                   name="moduleId"
                   required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   defaultValue=""
                 >
                   <option value="" disabled>
@@ -172,35 +162,22 @@ export default async function ModulesPage() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="edit-title">
-                  New title
-                </label>
-                <input
-                  id="edit-title"
-                  name="title"
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                <Label htmlFor="edit-title">New title</Label>
+                <Input id="edit-title" name="title" required />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="edit-order">
-                  Order (optional)
-                </label>
-                <input
+                <Label htmlFor="edit-order">Order (optional)</Label>
+                <Input
                   id="edit-order"
                   name="order"
                   type="number"
-                  min="1"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  min={1}
                   placeholder="Leave blank to keep current order"
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-              >
+              <Button type="submit" className="w-full">
                 Update module
-              </button>
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -211,35 +188,7 @@ export default async function ModulesPage() {
             <CardDescription>Removes the module and its content items.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={deleteModuleAction} className="space-y-3 text-sm">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="delete-module">
-                  Module
-                </label>
-                <select
-                  id="delete-module"
-                  name="moduleId"
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Select module
-                  </option>
-                  {moduleList.map((mod) => (
-                    <option key={mod.id} value={mod.id}>
-                      {mod.title} ({mod.courseTitle})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-background hover:bg-destructive/90"
-              >
-                Delete module
-              </button>
-            </form>
+            <DeleteModuleForm modules={moduleList} />
           </CardContent>
         </Card>
       </div>

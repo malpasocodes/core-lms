@@ -55,6 +55,32 @@ Core tables: `users`, `sessions`, `courses`, `modules`, `contentItems`, `enrollm
 - `/courses`, `/courses/[courseId]` - Course management
 - `/admin/*` - Admin pages (roster, enrollment, seeding)
 
+### UI Components (`components/ui/`)
+All form elements use shadcn/ui components for consistency:
+- `Input`, `Textarea`, `Label`, `Button`, `Checkbox` - Form elements
+- `Card`, `Badge`, `Separator` - Layout/display
+- `AlertDialog` - Delete confirmations
+- `Tabs` - Tabbed interfaces
+- Native `<select>` with consistent styling for form submission compatibility
+
+Select styling pattern:
+```tsx
+className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+```
+
+Delete confirmation pattern (client component):
+```tsx
+"use client";
+<AlertDialog>
+  <AlertDialogTrigger asChild><Button variant="destructive">Delete</Button></AlertDialogTrigger>
+  <AlertDialogContent>
+    <form action={deleteAction}>
+      <AlertDialogAction type="submit" variant="destructive">Confirm</AlertDialogAction>
+    </form>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
 ## Environment
 
 Requires `DATABASE_URL` env var pointing to Neon PostgreSQL.

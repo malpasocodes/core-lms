@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/schema";
-import { createUserAction, deleteUserAction } from "@/lib/admin-actions";
+import { createUserAction } from "@/lib/admin-actions";
 import { PasswordInput } from "@/components/password-input";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { DeleteUserButton } from "./_components/delete-user-button";
 
 const ROLES = ["learner", "instructor", "admin"] as const;
 type Role = (typeof ROLES)[number];
@@ -11,14 +15,14 @@ function TabLink({ role, active, count }: { role: Role; active: boolean; count: 
   return (
     <Link
       href={`/admin/roster?role=${role}`}
-      className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+      className={`relative px-3 py-2 text-xs font-medium transition-colors ${
         active
           ? "text-foreground"
           : "text-muted-foreground hover:text-foreground"
       }`}
     >
       <span className="capitalize">{role}s</span>
-      <span className="ml-2 text-xs text-muted-foreground">({count})</span>
+      <span className="ml-1.5 text-xs text-muted-foreground">({count})</span>
       {active && (
         <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
       )}
@@ -88,15 +92,7 @@ export default async function AdminRosterPage({
                       {user.createdAt.toLocaleDateString()}
                     </p>
                   </div>
-                  <form action={deleteUserAction}>
-                    <input type="hidden" name="userId" value={user.id} />
-                    <button
-                      type="submit"
-                      className="rounded-md border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted"
-                    >
-                      Delete
-                    </button>
-                  </form>
+                  <DeleteUserButton userId={user.id} email={user.email} />
                 </div>
               ))
             )}
@@ -107,26 +103,16 @@ export default async function AdminRosterPage({
           <h2 className="text-lg font-semibold text-foreground">Add user</h2>
           <form action={createUserAction} className="mt-3 space-y-3 text-sm">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" required />
             </div>
             <PasswordInput id="password" name="password" label="Password" required minLength={8} />
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground" htmlFor="role">
-                Role
-              </label>
+              <Label htmlFor="role">Role</Label>
               <select
                 id="role"
                 name="role"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                 defaultValue="learner"
               >
                 <option value="learner">Learner</option>
@@ -134,12 +120,9 @@ export default async function AdminRosterPage({
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <button
-              type="submit"
-              className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-            >
+            <Button type="submit" className="w-full">
               Add user
-            </button>
+            </Button>
           </form>
         </div>
       </div>

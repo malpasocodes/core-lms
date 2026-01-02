@@ -2,6 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { registerUser } from "@/lib/auth";
 import { PasswordInput } from "@/components/password-input";
 
@@ -19,7 +22,7 @@ export default async function RegisterPage(props: RegisterPageProps) {
     const password = (formData.get("password") as string | null) ?? "";
     const role = (formData.get("role") as string | null) ?? "";
 
-    const result = await registerUser({ email, password, role: role as any });
+    const result = await registerUser({ email, password, role: role as "learner" | "instructor" });
     if (!result.ok) {
       redirect(`/auth/register?error=${encodeURIComponent(result.message)}`);
     }
@@ -45,28 +48,18 @@ export default async function RegisterPage(props: RegisterPageProps) {
         <CardContent className="space-y-4 text-sm text-muted-foreground">
           <form action={registerAction} className="space-y-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" required />
             </div>
             <PasswordInput id="password" name="password" label="Password" required minLength={8} />
             <p className="text-xs text-muted-foreground">Minimum 8 characters.</p>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground" htmlFor="role">
-                Role
-              </label>
+              <Label htmlFor="role">Role</Label>
               <select
                 id="role"
                 name="role"
                 defaultValue="learner"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
               >
                 <option value="learner">Learner</option>
                 <option value="instructor">Instructor</option>
@@ -75,12 +68,9 @@ export default async function RegisterPage(props: RegisterPageProps) {
             {error ? (
               <p className="text-sm font-semibold text-destructive">{error}</p>
             ) : null}
-            <button
-              type="submit"
-              className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-            >
+            <Button type="submit" className="w-full">
               Register
-            </button>
+            </Button>
           </form>
           <p>
             Already have an account? Go to the{" "}

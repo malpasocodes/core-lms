@@ -5,6 +5,9 @@ import { getDb } from "@/lib/db";
 import { courses, enrollments, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { enrollLearnerAction } from "@/lib/enrollment-actions";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function AdminEnrollPage() {
   const user = await getCurrentUser();
@@ -49,105 +52,105 @@ export default async function AdminEnrollPage() {
         </p>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-5">
-        <form action={enrollLearnerAction} className="space-y-4 text-sm">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground" htmlFor="course-select">
-              Course
-            </label>
-            <select
-              id="course-select"
-              name="courseId"
-              required
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Select a course
-              </option>
-              {courseList.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground" htmlFor="learner-email">
-              Learner
-            </label>
-            <select
-              id="learner-email"
-              name="email"
-              required
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Select a learner
-              </option>
-              {learners.map((learner) => (
-                <option key={learner.id} value={learner.email}>
-                  {learner.email}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-          >
-            Enroll learner
-          </button>
-        </form>
-        <p className="text-xs text-muted-foreground">
-          This form only enrolls existing learners into existing courses. Use Roster to create users first. Duplicate enrollments are prevented.
-        </p>
-      </div>
-
-      <div className="space-y-2 rounded-2xl border border-border/70 bg-card/80 p-5">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Current enrollments</p>
-          <p className="text-xs text-muted-foreground">Expand a course to view enrolled learners.</p>
-        </div>
-        {enrollmentMap.every((c) => c.learners.length === 0) ? (
-          <p className="text-sm text-muted-foreground">No enrollments yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {enrollmentMap.map((course) => (
-              <details
-                key={course.id}
-                className="overflow-hidden rounded-md border border-border/70 bg-background/80 text-sm text-foreground"
+      <Card>
+        <CardHeader>
+          <CardTitle>Enroll learner</CardTitle>
+          <CardDescription>
+            This form only enrolls existing learners into existing courses. Use Roster to create users first.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={enrollLearnerAction} className="space-y-4 text-sm">
+            <div className="space-y-1">
+              <Label htmlFor="course-select">Course</Label>
+              <select
+                id="course-select"
+                name="courseId"
+                required
+                className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                defaultValue=""
               >
-                <summary className="flex cursor-pointer items-center justify-between px-3 py-2">
-                  <div className="space-y-0.5">
-                    <span className="font-semibold">{course.title}</span>
-                    <p className="text-[11px] text-muted-foreground font-mono">{course.id}</p>
-                  </div>
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    {course.learners.length} enrolled
-                  </span>
-                </summary>
-                {course.learners.length === 0 ? (
-                  <div className="border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
-                    No learners enrolled.
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-border border-t border-border/70">
-                    {course.learners.map((email) => (
-                      <li key={email} className="px-3 py-2 text-sm">
-                        {email}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </details>
-            ))}
-          </div>
-        )}
-      </div>
+                <option value="" disabled>
+                  Select a course
+                </option>
+                {courseList.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="learner-email">Learner</Label>
+              <select
+                id="learner-email"
+                name="email"
+                required
+                className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Select a learner
+                </option>
+                {learners.map((learner) => (
+                  <option key={learner.id} value={learner.email}>
+                    {learner.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Button type="submit" className="w-full">
+              Enroll learner
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Current enrollments</CardTitle>
+          <CardDescription>Expand a course to view enrolled learners.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {enrollmentMap.every((c) => c.learners.length === 0) ? (
+            <p className="text-sm text-muted-foreground">No enrollments yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {enrollmentMap.map((course) => (
+                <details
+                  key={course.id}
+                  className="overflow-hidden rounded-md border border-border/70 bg-background/80 text-sm text-foreground"
+                >
+                  <summary className="flex cursor-pointer items-center justify-between px-3 py-2">
+                    <div className="space-y-0.5">
+                      <span className="font-semibold">{course.title}</span>
+                      <p className="text-[11px] text-muted-foreground font-mono">{course.id}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {course.learners.length} enrolled
+                    </span>
+                  </summary>
+                  {course.learners.length === 0 ? (
+                    <div className="border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                      No learners enrolled.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-border border-t border-border/70">
+                      {course.learners.map((email) => (
+                        <li key={email} className="px-3 py-2 text-sm">
+                          {email}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </details>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

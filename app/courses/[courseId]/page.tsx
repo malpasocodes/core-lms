@@ -1,6 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import {
@@ -259,24 +263,15 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                         <form action={createContentItemAction} className="space-y-2 rounded-md border border-border/60 bg-background/80 p-3">
                           <input type="hidden" name="moduleId" value={mod.id} />
                           <div className="space-y-1">
-                            <label className="text-xs font-semibold text-foreground" htmlFor={`title-${mod.id}`}>
-                              Item title
-                            </label>
-                            <input
-                              id={`title-${mod.id}`}
-                              name="title"
-                              required
-                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                            />
+                            <Label htmlFor={`title-${mod.id}`}>Item title</Label>
+                            <Input id={`title-${mod.id}`} name="title" required />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs font-semibold text-foreground" htmlFor={`type-${mod.id}`}>
-                              Type
-                            </label>
+                            <Label htmlFor={`type-${mod.id}`}>Type</Label>
                             <select
                               id={`type-${mod.id}`}
                               name="type"
-                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+                              className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                               defaultValue="page"
                             >
                               <option value="page">Text page</option>
@@ -284,23 +279,10 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                             </select>
                           </div>
                           <div className="space-y-1">
-                            <label className="text-xs font-semibold text-foreground" htmlFor={`content-${mod.id}`}>
-                              Content (text or URL)
-                            </label>
-                            <textarea
-                              id={`content-${mod.id}`}
-                              name="content"
-                              rows={3}
-                              required
-                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                            />
+                            <Label htmlFor={`content-${mod.id}`}>Content (text or URL)</Label>
+                            <Textarea id={`content-${mod.id}`} name="content" rows={3} required />
                           </div>
-                          <button
-                            type="submit"
-                            className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-                          >
-                            Add content item
-                          </button>
+                          <Button type="submit" className="w-full">Add content item</Button>
                         </form>
                       ) : null}
                     </div>
@@ -364,33 +346,14 @@ export default async function CourseDetailPage(props: CoursePageProps) {
             >
               <input type="hidden" name="courseId" value={courseId} />
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="assignment-title">
-                  Assignment title
-                </label>
-                <input
-                  id="assignment-title"
-                  name="title"
-                  required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                <Label htmlFor="assignment-title">Assignment title</Label>
+                <Input id="assignment-title" name="title" required />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="assignment-description">
-                  Description / prompt
-                </label>
-                <textarea
-                  id="assignment-description"
-                  name="description"
-                  rows={3}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
+                <Label htmlFor="assignment-description">Description / prompt</Label>
+                <Textarea id="assignment-description" name="description" rows={3} />
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-              >
-                Create assignment
-              </button>
+              <Button type="submit" className="w-full">Create assignment</Button>
             </form>
           ) : null}
         </CardContent>
@@ -403,22 +366,10 @@ export default async function CourseDetailPage(props: CoursePageProps) {
           <form action={createModuleAction} className="space-y-3">
             <input type="hidden" name="courseId" value={courseId} />
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground" htmlFor="module-title">
-                Module title
-              </label>
-              <input
-                id="module-title"
-                name="title"
-                required
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
+              <Label htmlFor="module-title">Module title</Label>
+              <Input id="module-title" name="title" required />
             </div>
-            <button
-              type="submit"
-              className="rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-            >
-              Add module
-            </button>
+            <Button type="submit">Add module</Button>
           </form>
         </div>
       ) : null}
@@ -476,23 +427,10 @@ export default async function CourseDetailPage(props: CoursePageProps) {
               <form action={enrollLearnerAction} className="space-y-3">
                 <input type="hidden" name="courseId" value={courseId} />
                 <div className="space-y-1">
-                  <label htmlFor="email" className="text-xs font-semibold text-foreground">
-                    Learner email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                  />
+                  <Label htmlFor="email">Learner email</Label>
+                  <Input id="email" name="email" type="email" required />
                 </div>
-                <button
-                  type="submit"
-                  className="rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-                >
-                  Enroll learner
-                </button>
+                <Button type="submit">Enroll learner</Button>
               </form>
             </CardContent>
           </Card>

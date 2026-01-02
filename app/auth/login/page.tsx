@@ -2,6 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { loginUser } from "@/lib/auth";
 import { PasswordInput } from "@/components/password-input";
 
@@ -43,27 +46,16 @@ export default async function LoginPage(props: LoginPageProps) {
         <CardContent className="space-y-4 text-sm text-muted-foreground">
           <form action={loginAction} className="space-y-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" required />
             </div>
             <PasswordInput id="password" name="password" label="Password" required />
             {error ? (
               <p className="text-sm font-semibold text-destructive">{error}</p>
             ) : null}
-            <button
-              type="submit"
-              className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-            >
+            <Button type="submit" className="w-full">
               Login
-            </button>
+            </Button>
           </form>
           <p>
             Need to create an account? Visit the{" "}

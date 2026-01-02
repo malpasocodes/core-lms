@@ -3,6 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { gradeSubmissionAction, submitAssignmentAction } from "@/lib/assignment-actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -113,9 +118,9 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
           <div className="space-y-3 rounded-lg border border-border/60 bg-background/80 p-4">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-foreground">Your submission</p>
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <Badge variant={learnerSubmission ? "default" : "secondary"}>
                 {learnerSubmission ? "Submitted" : "Not submitted"}
-              </span>
+              </Badge>
             </div>
             {learnerGrade ? (
               <div className="flex items-center justify-between rounded-md border border-border/60 bg-card/70 px-3 py-2">
@@ -150,37 +155,28 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
             <form action={submitAssignmentAction} className="space-y-3">
               <input type="hidden" name="assignmentId" value={assignmentId} />
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="submission-text">
-                  Submission text
-                </label>
-                <textarea
+                <Label htmlFor="submission-text">Submission text</Label>
+                <Textarea
                   id="submission-text"
                   name="submissionText"
                   rows={4}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
                   defaultValue={learnerSubmission?.submissionText ?? ""}
                   placeholder="Paste your response here (optional if you provide a file URL)"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground" htmlFor="submission-file">
-                  File URL (optional)
-                </label>
-                <input
+                <Label htmlFor="submission-file">File URL (optional)</Label>
+                <Input
                   id="submission-file"
                   name="fileUrl"
                   type="url"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
                   defaultValue={learnerSubmission?.fileUrl ?? ""}
                   placeholder="https://example.com/artifact.pdf"
                 />
               </div>
-              <button
-                type="submit"
-                className="rounded-md bg-foreground px-3 py-2 text-sm font-semibold text-background hover:bg-foreground/90"
-              >
+              <Button type="submit">
                 {learnerSubmission ? "Update submission" : "Submit assignment"}
-              </button>
+              </Button>
             </form>
           </div>
         ) : null}
@@ -219,10 +215,8 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
                         <input type="hidden" name="submissionId" value={sub.id} />
                         <input type="hidden" name="assignmentId" value={assignmentId} />
                         <div className="flex items-center justify-between gap-3">
-                          <label className="text-xs font-semibold text-foreground" htmlFor={`grade-${sub.id}`}>
-                            Grade (0-100)
-                          </label>
-                          <input
+                          <Label htmlFor={`grade-${sub.id}`}>Grade (0-100)</Label>
+                          <Input
                             id={`grade-${sub.id}`}
                             name="score"
                             type="number"
@@ -230,15 +224,10 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
                             max={100}
                             step={1}
                             required
-                            className="w-24 rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+                            className="w-24"
                           />
                         </div>
-                        <button
-                          type="submit"
-                          className="w-full rounded-md bg-foreground px-3 py-2 text-xs font-semibold uppercase tracking-wide text-background hover:bg-foreground/90"
-                        >
-                          Save grade
-                        </button>
+                        <Button type="submit" className="w-full">Save grade</Button>
                       </form>
                     ) : (
                       <p className="text-xs text-muted-foreground">Not graded yet.</p>
