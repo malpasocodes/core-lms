@@ -1,18 +1,15 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { hashSync } from "bcryptjs";
+import { clerkClient } from "@clerk/nextjs/server";
 
-import { requireAdmin } from "@/lib/auth";
-import { getDb } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { requireAdmin, type Role } from "@/lib/auth";
 
 const allowedRoles = ["admin", "instructor", "learner"] as const;
 
 export async function createUserAction(formData: FormData) {
   const admin = await requireAdmin();
-  if (!admin) redirect("/auth/login");
+  if (!admin) redirect("/sign-in");
 
   const email = (formData.get("email") as string | null)?.trim().toLowerCase();
   const password = (formData.get("password") as string | null)?.trim();
@@ -24,60 +21,71 @@ export async function createUserAction(formData: FormData) {
   if (password.length < 8) {
     redirect("/admin/roster?error=Password%20must%20be%20at%20least%208%20characters");
   }
-  if (!allowedRoles.includes(role as any)) {
+  if (!allowedRoles.includes(role as (typeof allowedRoles)[number])) {
     redirect("/admin/roster?error=Invalid%20role");
   }
 
-  const db = await getDb();
-  await db.insert(users).values({
-    id: crypto.randomUUID(),
-    email,
-    passwordHash: hashSync(password, 12),
-    role: role as any,
-  });
+  try {
+    const client = await clerkClient();
+    await client.users.createUser({
+      emailAddress: [email],
+      password,
+      publicMetadata: { role },
+    });
+  } catch (error: unknown) {
+    const clerkError = error as { errors?: Array<{ message?: string }> };
+    const message = clerkError?.errors?.[0]?.message || "Failed to create user";
+    redirect(`/admin/roster?error=${encodeURIComponent(message)}`);
+  }
 
   redirect("/admin/roster?notice=User%20added");
 }
 
 export async function deleteUserAction(formData: FormData) {
   const admin = await requireAdmin();
-  if (!admin) redirect("/auth/login");
+  if (!admin) redirect("/sign-in");
 
   const userId = (formData.get("userId") as string | null)?.trim();
   if (!userId) {
     redirect("/admin/roster?error=Missing%20user");
   }
 
-  // Prevent deleting self to avoid locking out admin access
   if (userId === admin.id) {
     redirect("/admin/roster?error=Cannot%20delete%20your%20own%20account");
   }
 
-  const db = await getDb();
-  await db.delete(users).where(eq(users.id, userId));
+  try {
+    const client = await clerkClient();
+    await client.users.deleteUser(userId);
+  } catch {
+    redirect("/admin/roster?error=Failed%20to%20delete%20user");
+  }
 
   redirect("/admin/roster?notice=User%20deleted");
 }
 
-export async function updateUserPasswordAction(formData: FormData) {
+export async function updateUserRoleAction(formData: FormData) {
   const admin = await requireAdmin();
-  if (!admin) redirect("/auth/login");
+  if (!admin) redirect("/sign-in");
 
   const userId = (formData.get("userId") as string | null)?.trim();
-  const newPassword = (formData.get("newPassword") as string | null)?.trim();
+  const role = (formData.get("role") as string | null)?.trim();
 
-  if (!userId || !newPassword) {
+  if (!userId || !role) {
     redirect("/admin/roster?error=Missing%20fields");
   }
-  if (newPassword.length < 8) {
-    redirect("/admin/roster?error=Password%20must%20be%20at%20least%208%20characters");
+  if (!allowedRoles.includes(role as (typeof allowedRoles)[number])) {
+    redirect("/admin/roster?error=Invalid%20role");
   }
 
-  const db = await getDb();
-  await db
-    .update(users)
-    .set({ passwordHash: hashSync(newPassword, 12) })
-    .where(eq(users.id, userId));
+  try {
+    const client = await clerkClient();
+    await client.users.updateUser(userId, {
+      publicMetadata: { role: role as Role },
+    });
+  } catch {
+    redirect("/admin/roster?error=Failed%20to%20update%20role");
+  }
 
-  redirect("/admin/roster?notice=Password%20updated");
+  redirect("/admin/roster?notice=Role%20updated");
 }

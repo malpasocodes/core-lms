@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { getDb } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { clerkClient } from "@clerk/nextjs/server";
 import { createUserAction } from "@/lib/admin-actions";
 import { PasswordInput } from "@/components/password-input";
 import { Input } from "@/components/ui/input";
@@ -8,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DeleteUserButton } from "./_components/delete-user-button";
 import { EditUserButton } from "./_components/edit-user-button";
+import type { Role } from "@/lib/auth";
 
 const ROLES = ["learner", "instructor", "admin"] as const;
-type Role = (typeof ROLES)[number];
 
 function TabLink({ role, active, count }: { role: Role; active: boolean; count: number }) {
   return (
@@ -39,16 +38,16 @@ export default async function AdminRosterPage({
   const params = await searchParams;
   const activeRole = ROLES.includes(params.role as Role) ? (params.role as Role) : "learner";
 
-  const db = await getDb();
-  const allUsers = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      role: users.role,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .orderBy(users.createdAt);
+  // Fetch users from Clerk instead of local DB
+  const client = await clerkClient();
+  const { data: clerkUsers } = await client.users.getUserList({ limit: 500 });
+
+  const allUsers = clerkUsers.map((user) => ({
+    id: user.id,
+    email: user.primaryEmailAddress?.emailAddress ?? "",
+    role: (user.publicMetadata?.role as Role) ?? "learner",
+    createdAt: new Date(user.createdAt),
+  }));
 
   const usersByRole = {
     learner: allUsers.filter((u) => u.role === "learner"),
@@ -63,7 +62,7 @@ export default async function AdminRosterPage({
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Admin</p>
         <h1 className="text-3xl font-semibold text-foreground">Roster</h1>
-        <p className="text-sm text-muted-foreground">View all users and manage demo accounts.</p>
+        <p className="text-sm text-muted-foreground">View all users and manage accounts.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">

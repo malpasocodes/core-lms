@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { updateUserPasswordAction } from "@/lib/admin-actions";
+import { updateUserRoleAction } from "@/lib/admin-actions";
 import { Button } from "@/components/ui/button";
-import { PasswordInput } from "@/components/password-input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ export function EditUserButton({ userId, email, role, createdAt }: EditUserButto
         <DialogHeader>
           <DialogTitle>Edit user</DialogTitle>
           <DialogDescription>
-            View user details and update password for <strong>{email}</strong>.
+            View user details and update role for <strong>{email}</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -46,7 +46,7 @@ export function EditUserButton({ userId, email, role, createdAt }: EditUserButto
               <span className="font-medium text-foreground">{email}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Role</span>
+              <span className="text-muted-foreground">Current Role</span>
               <span className="font-medium capitalize text-foreground">{role}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
@@ -55,20 +55,29 @@ export function EditUserButton({ userId, email, role, createdAt }: EditUserButto
             </div>
           </div>
 
-          <form action={updateUserPasswordAction} className="space-y-3">
+          <form action={updateUserRoleAction} className="space-y-3">
             <input type="hidden" name="userId" value={userId} />
-            <PasswordInput
-              id="newPassword"
-              name="newPassword"
-              label="New password (min 8 characters)"
-              required
-              minLength={8}
-            />
+            <div className="space-y-1">
+              <Label htmlFor="role">New Role</Label>
+              <select
+                id="role"
+                name="role"
+                defaultValue={role}
+                className="flex h-9 w-full rounded-md border border-input bg-input/20 px-3 py-1 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+              >
+                <option value="learner">Learner</option>
+                <option value="instructor">Instructor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Password management is handled through Clerk. Users can reset their own passwords.
+            </p>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Update password</Button>
+              <Button type="submit">Update role</Button>
             </DialogFooter>
           </form>
         </div>

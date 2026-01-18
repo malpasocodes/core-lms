@@ -1,17 +1,21 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { completions, contentItems, enrollments, modules } from "@/lib/schema";
+import { ensureUserInDb } from "@/lib/user-sync";
+import { completions, contentItems, modules } from "@/lib/schema";
 
 export async function markContentCompleteAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user || user.role !== "learner") {
-    redirect("/auth/login");
+    redirect("/sign-in");
   }
+
+  // Ensure user exists in local DB for foreign key references
+  await ensureUserInDb();
 
   const itemId = (formData.get("itemId") as string | null)?.trim();
   if (!itemId) {

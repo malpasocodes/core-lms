@@ -15,7 +15,7 @@ export async function createModuleAction(formData: FormData) {
   }
 
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const db = await getDb();
   const course = await db.query.courses.findFirst({
@@ -59,7 +59,7 @@ export async function updateModuleAction(formData: FormData) {
   }
 
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const db = await getDb();
   const moduleRow = await db
@@ -102,7 +102,7 @@ export async function deleteModuleAction(formData: FormData) {
   }
 
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const db = await getDb();
   const moduleRow = await db
@@ -142,7 +142,7 @@ export async function createContentItemAction(formData: FormData) {
   }
 
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const db = await getDb();
   const moduleRow = await db
@@ -204,7 +204,7 @@ export async function updateContentItemAction(formData: FormData) {
   }
 
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const db = await getDb();
   const itemRow = await db
@@ -254,7 +254,7 @@ export async function deleteContentItemAction(formData: FormData) {
   }
 
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const db = await getDb();
   const itemRow = await db

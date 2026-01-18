@@ -1,11 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { clerkClient } from "@clerk/nextjs/server";
 
-import { requireAdmin, requireInstructor } from "@/lib/auth";
+import { requireAdmin, requireInstructor, type Role } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { enrollments, users } from "@/lib/schema";
+import { enrollments } from "@/lib/schema";
+import { syncUserToDb } from "@/lib/user-sync";
 
 export async function enrollLearnerAction(formData: FormData) {
   const courseId = (formData.get("courseId") as string | null)?.trim();
@@ -18,7 +19,6 @@ export async function enrollLearnerAction(formData: FormData) {
   const db = await getDb();
 
   // Only admins or instructors who own the course may enroll.
-  // Instructors check happens implicitly by joining with course ownership.
   const instructor = await requireInstructor().catch(() => null);
   const admin = instructor ? null : await requireAdmin().catch(() => null);
 
@@ -37,17 +37,33 @@ export async function enrollLearnerAction(formData: FormData) {
     }
   }
 
-  const learner = await db.query.users.findFirst({
-    where: eq(users.email, emailRaw),
+  // Look up learner from Clerk by email
+  const client = await clerkClient();
+  const { data: clerkUsers } = await client.users.getUserList({
+    emailAddress: [emailRaw],
+    limit: 1,
   });
 
-  if (!learner || learner.role !== "learner") {
-    redirect(`/courses/${courseId}?error=User%20must%20exist%20and%20be%20a%20learner`);
+  const clerkUser = clerkUsers[0];
+  if (!clerkUser) {
+    redirect(`/courses/${courseId}?error=User%20not%20found`);
   }
+
+  const role = (clerkUser.publicMetadata?.role as Role) ?? "learner";
+  if (role !== "learner") {
+    redirect(`/courses/${courseId}?error=User%20must%20be%20a%20learner`);
+  }
+
+  // Sync the learner to local DB for foreign key reference
+  await syncUserToDb({
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress ?? emailRaw,
+    role,
+  });
 
   const existing = await db.query.enrollments.findFirst({
     columns: { id: true },
-    where: (e, { and, eq }) => and(eq(e.userId, learner.id), eq(e.courseId, courseId)),
+    where: (e, { and, eq }) => and(eq(e.userId, clerkUser.id), eq(e.courseId, courseId)),
   });
 
   if (existing) {
@@ -56,7 +72,7 @@ export async function enrollLearnerAction(formData: FormData) {
 
   await db.insert(enrollments).values({
     id: crypto.randomUUID(),
-    userId: learner.id,
+    userId: clerkUser.id,
     courseId,
   });
 

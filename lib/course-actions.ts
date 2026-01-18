@@ -9,7 +9,7 @@ import { courses, users } from "@/lib/schema";
 
 export async function createCourseAction(formData: FormData) {
   const admin = await requireAdmin();
-  if (!admin) redirect("/auth/login");
+  if (!admin) redirect("/sign-in");
 
   const title = (formData.get("title") as string | null)?.trim();
   const description = (formData.get("description") as string | null)?.trim() || "";
@@ -45,7 +45,7 @@ export async function createCourseAction(formData: FormData) {
 
 export async function deleteCourseAction(formData: FormData) {
   const admin = await requireAdmin();
-  if (!admin) redirect("/auth/login");
+  if (!admin) redirect("/sign-in");
   const courseId = (formData.get("courseId") as string | null)?.trim();
   if (!courseId) {
     redirect("/dashboard?error=Missing%20course");
@@ -58,7 +58,7 @@ export async function deleteCourseAction(formData: FormData) {
 
 export async function updateCourseAction(formData: FormData) {
   const admin = await requireAdmin();
-  if (!admin) redirect("/auth/login");
+  if (!admin) redirect("/sign-in");
 
   const courseId = (formData.get("courseId") as string | null)?.trim();
   const title = (formData.get("title") as string | null)?.trim();

@@ -5,11 +5,12 @@ import { eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { assignments, courses, enrollments, submissions, grades } from "@/lib/schema";
+import { ensureUserInDb } from "@/lib/user-sync";
+import { assignments, courses, submissions, grades } from "@/lib/schema";
 
 export async function createAssignmentAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const courseId = (formData.get("courseId") as string | null)?.trim();
   const title = (formData.get("title") as string | null)?.trim();
@@ -47,7 +48,10 @@ export async function createAssignmentAction(formData: FormData) {
 
 export async function submitAssignmentAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
+
+  // Ensure user exists in local DB for foreign key references
+  await ensureUserInDb();
 
   if (user.role !== "learner") {
     redirect("/dashboard?error=Only%20learners%20can%20submit");
@@ -113,7 +117,10 @@ export async function submitAssignmentAction(formData: FormData) {
 
 export async function gradeSubmissionAction(formData: FormData) {
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
+
+  // Ensure user exists in local DB for foreign key references
+  await ensureUserInDb();
 
   const submissionId = (formData.get("submissionId") as string | null)?.trim();
   const assignmentId = (formData.get("assignmentId") as string | null)?.trim();

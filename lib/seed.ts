@@ -1,37 +1,20 @@
-import { hashSync } from "bcryptjs";
-import { eq } from "drizzle-orm";
-
-import { getDb } from "@/lib/db";
-import { users } from "@/lib/schema";
-
-const demoUsers = [
-  {
-    email: "alfred.essa@gmail.com",
-    password: "changeme-admin",
-    role: "admin",
-  },
-  {
-    email: "malpaso@alfredcodes.com",
-    password: "changeme-instructor",
-    role: "instructor",
-  },
-  {
-    email: "aessa@drurylanemedia.com",
-    password: "changeme-student",
-    role: "learner",
-  },
-] as const;
+/**
+ * @deprecated This file is no longer used - users are now managed through Clerk.
+ *
+ * To create users with specific roles:
+ * 1. Users can self-register at /sign-up (defaults to "learner" role)
+ * 2. Admins can create users via /admin/roster
+ * 3. Roles can be changed via Clerk Dashboard or /admin/roster
+ *
+ * To set an initial admin user:
+ * 1. Sign up at /sign-up
+ * 2. Go to Clerk Dashboard > Users > select user
+ * 3. Edit publicMetadata: { "role": "admin" }
+ */
 
 export async function seedDemoUsers() {
-  const db = await getDb();
-
-  for (const demo of demoUsers) {
-    await db.delete(users).where(eq(users.email, demo.email));
-    await db.insert(users).values({
-      id: crypto.randomUUID(),
-      email: demo.email.toLowerCase(),
-      passwordHash: hashSync(demo.password, 12),
-      role: demo.role as any,
-    });
-  }
+  console.warn(
+    "seedDemoUsers is deprecated. Users are now managed through Clerk. " +
+      "See lib/seed.ts for instructions on creating users."
+  );
 }

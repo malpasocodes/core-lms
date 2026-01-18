@@ -1,188 +1,55 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { compareSync, hashSync } from "bcryptjs";
-import { and, eq, gt } from "drizzle-orm";
+import { headers } from "next/headers";
 
-import { getDb, sql } from "@/lib/db";
-import { roleEnum, sessions, users, type User } from "@/lib/schema";
+import { roleEnum } from "@/lib/schema";
 
-const SESSION_COOKIE = "corelms_session";
-const SESSION_TTL_DAYS = 7;
-
-type AuthResult =
-  | { ok: true; user: Pick<User, "id" | "email" | "role"> }
-  | { ok: false; message: string };
-
-const publicRoles = ["learner", "instructor"] as const;
 export type Role = (typeof roleEnum.enumValues)[number];
 
-let ensured = false;
-async function ensureAuthTables() {
-  ensured = true;
-  return;
-}
-
-function createId() {
-  return crypto.randomUUID();
-}
-
-function sessionExpiry() {
-  const expiresAt = new Date();
-  expiresAt.setUTCDate(expiresAt.getUTCDate() + SESSION_TTL_DAYS);
-  return expiresAt;
-}
-
-async function hashPassword(password: string) {
-  return hashSync(password, 12);
-}
-
-async function verifyPassword(password: string, hash: string) {
-  return compareSync(password, hash);
-}
-
-export async function registerUser(input: {
+type ClerkUser = {
+  id: string;
   email: string;
-  password: string;
   role: Role;
-}): Promise<AuthResult> {
-  const email = input.email.trim().toLowerCase();
-  const password = input.password;
-  const role = input.role;
+};
 
-  if (!email || !password) {
-    return { ok: false, message: "Email and password are required." };
-  }
-  if (password.length < 8) {
-    return { ok: false, message: "Password must be at least 8 characters." };
-  }
-  if (!publicRoles.includes(role as any)) {
-    return { ok: false, message: "Invalid role selection." };
-  }
-
-  await ensureAuthTables();
-  const db = await getDb();
-
-  const existing = await db.query.users.findFirst({
-    columns: { id: true },
-    where: eq(users.email, email),
-  });
-  if (existing) {
-    return { ok: false, message: "An account already exists for this email." };
-  }
-
-  const id = createId();
-  const passwordHash = await hashPassword(password);
-  await db.insert(users).values({ id, email, passwordHash, role });
-
-  const user: Pick<User, "id" | "email" | "role"> = { id, email, role };
-  await createSession(user.id);
-
-  return { ok: true, user };
-}
-
-export async function loginUser(input: {
-  email: string;
-  password: string;
-}): Promise<AuthResult> {
-  const email = input.email.trim().toLowerCase();
-  const password = input.password;
-
-  if (!email || !password) {
-    return { ok: false, message: "Email and password are required." };
-  }
-
-  await ensureAuthTables();
-  const db = await getDb();
-  const user = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
+/**
+ * Get the current user from Clerk and extract role from publicMetadata.
+ * Returns null if not authenticated.
+ */
+export async function getCurrentUser(): Promise<ClerkUser | null> {
+  const user = await currentUser();
 
   if (!user) {
-    return { ok: false, message: "Invalid credentials." };
-  }
-
-  const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) {
-    return { ok: false, message: "Invalid credentials." };
-  }
-
-  await createSession(user.id);
-  return { ok: true, user: { id: user.id, email: user.email, role: user.role } };
-}
-
-async function createSession(userId: string) {
-  await ensureAuthTables();
-  const db = await getDb();
-  const id = createId();
-  const expiresAt = sessionExpiry();
-
-  await db.insert(sessions).values({
-    id,
-    userId,
-    expiresAt,
-  });
-
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, id, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
-}
-
-export async function logoutUser() {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!sessionId) return;
-  await ensureAuthTables();
-  const db = await getDb();
-  await db.delete(sessions).where(eq(sessions.id, sessionId));
-  cookieStore.delete(SESSION_COOKIE);
-}
-
-export async function getCurrentUser() {
-  await ensureAuthTables();
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!sessionId) return null;
-
-  const db = await getDb();
-  const now = new Date();
-  const session = await db.query.sessions.findFirst({
-    where: and(eq(sessions.id, sessionId), gt(sessions.expiresAt, now)),
-  });
-
-  if (!session) {
-    cookieStore.delete(SESSION_COOKIE);
     return null;
   }
 
-  const user = await db.query.users.findFirst({
-    columns: { id: true, email: true, role: true },
-    where: eq(users.id, session.userId),
-  });
+  const email = user.primaryEmailAddress?.emailAddress ?? "";
+  const role = (user.publicMetadata?.role as Role) ?? "learner";
 
-  if (!user) {
-    cookieStore.delete(SESSION_COOKIE);
-    return null;
-  }
-
-  return user;
+  return {
+    id: user.id,
+    email,
+    role,
+  };
 }
 
-export async function requireUser() {
+/**
+ * Require authenticated user, redirect to sign-in if not.
+ */
+export async function requireUser(): Promise<ClerkUser> {
   const user = await getCurrentUser();
   if (!user) {
-    redirect("/auth/login");
+    redirect("/sign-in");
   }
   return user;
 }
 
-export async function requireRole(role: Role | Role[]) {
+/**
+ * Require user with specific role(s), redirect to dashboard if unauthorized.
+ */
+export async function requireRole(role: Role | Role[]): Promise<ClerkUser> {
   const user = await requireUser();
   const roles = Array.isArray(role) ? role : [role];
   if (!roles.includes(user.role)) {
@@ -191,19 +58,19 @@ export async function requireRole(role: Role | Role[]) {
   return user;
 }
 
-export async function requireAdmin() {
+export async function requireAdmin(): Promise<ClerkUser> {
   return requireRole("admin");
 }
 
-export async function requireInstructor() {
+export async function requireInstructor(): Promise<ClerkUser> {
   return requireRole("instructor");
 }
 
-export async function requireLearner() {
+export async function requireLearner(): Promise<ClerkUser> {
   return requireRole("learner");
 }
 
-export async function getClientIp() {
+export async function getClientIp(): Promise<string> {
   const h = await headers();
   return h.get("x-forwarded-for") ?? "unknown";
 }

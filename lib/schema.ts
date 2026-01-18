@@ -10,17 +10,9 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const sessions = pgTable("sessions", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+// Sessions table removed - now using Clerk for authentication
 
 export type User = typeof users.$inferSelect;
-export type Session = typeof sessions.$inferSelect;
 
 export const courses = pgTable("courses", {
   id: text("id").primaryKey(),
