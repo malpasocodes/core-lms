@@ -1,5 +1,71 @@
 # Changelog
 
+## 2026-01-18
+
+### Course Content Ingestion System
+- Added normalized content ingestion for importing structured course content from JSON
+- New `contentPayload` column on content_items table stores block-level content as JSON
+- New `normalized_text` content type for rich structured content
+- Admin ingest page at `/admin/ingest` for pasting JSON content
+- Normalized content renderer displays paragraphs, figures, tables, and other block types
+- Added CLI script for bulk ingestion: `npx tsx scripts/ingest-finance.ts`
+
+**Files created:**
+- `app/admin/ingest/page.tsx` - Admin UI for JSON content ingestion
+- `lib/ingest-actions.ts` - Server action for processing normalized JSON
+- `components/normalized-content-renderer.tsx` - Renders normalized content blocks
+- `scripts/ingest-finance.ts` - CLI script for ingesting finance course
+- `drizzle/0011_add_content_payload.sql` - Migration for contentPayload column
+- `docs/core_lms_ingestion_spec_modules_→_sections.md` - Ingestion format specification
+
+**Schema changes:**
+- Added `contentPayload` text column to `content_items` table
+- Added `normalized_text` to `content_type` enum
+
+## 2026-01-17
+
+### Clerk Authentication Migration
+- Migrated from custom session-based authentication to Clerk
+- User roles stored in Clerk's `publicMetadata` (learner, instructor, admin)
+- Authentication UI uses Clerk's built-in components (SignIn, SignUp, UserButton)
+- Local users table retained for foreign key references (courses, enrollments, etc.)
+- Added user sync utility to bridge Clerk users with local database
+
+**Dependencies:**
+- Added: `@clerk/nextjs`, `svix`
+- Removed: `bcryptjs`, `@types/bcryptjs`
+
+**Files created:**
+- `proxy.ts` - Clerk middleware for route protection (Next.js 16 format)
+- `lib/user-sync.ts` - Syncs Clerk users to local DB for foreign keys
+- `app/sign-in/[[...sign-in]]/page.tsx` - Clerk sign-in page
+- `app/sign-up/[[...sign-up]]/page.tsx` - Clerk sign-up page
+
+**Files modified:**
+- `lib/auth.ts` - Rewritten to use Clerk's `currentUser()`
+- `lib/admin-actions.ts` - Uses Clerk Backend API for user management
+- `app/layout.tsx` - Added ClerkProvider wrapper
+- `components/layout/primary-nav.tsx` - Added UserButton, SignedIn/SignedOut
+- `app/admin/roster/page.tsx` - Fetches users from Clerk API
+- `app/admin/roster/_components/edit-user-button.tsx` - Changed to role editing
+- `lib/schema.ts` - Removed sessions table
+- `lib/seed.ts` - Marked as deprecated
+
+**Files deleted:**
+- `app/auth/login/page.tsx`
+- `app/auth/register/page.tsx`
+- `app/logout/page.tsx`
+
+**Environment variables required:**
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in`
+- `NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up`
+- `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard`
+- `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard`
+
+**Note:** To set the first admin, edit the user's publicMetadata in Clerk Dashboard: `{ "role": "admin" }`
+
 ## 2026-01-01
 
 ### Course Page Tab Navigation

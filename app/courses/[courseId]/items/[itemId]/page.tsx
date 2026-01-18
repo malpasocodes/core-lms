@@ -6,8 +6,9 @@ import { and, eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { completions, contentItems, courses, enrollments, modules } from "@/lib/schema";
+import { contentItems, courses, modules } from "@/lib/schema";
 import { markContentCompleteAction } from "@/lib/progress-actions";
+import { NormalizedContentRenderer } from "@/components/normalized-content-renderer";
 
 type ItemPageProps = {
   params: Promise<{ courseId: string; itemId: string }>;
@@ -27,6 +28,7 @@ export default async function CourseItemPage(props: ItemPageProps) {
       itemTitle: contentItems.title,
       itemType: contentItems.type,
       itemContent: contentItems.content,
+      itemContentPayload: contentItems.contentPayload,
       moduleId: modules.id,
       moduleTitle: modules.title,
       courseId: courses.id,
@@ -95,7 +97,9 @@ export default async function CourseItemPage(props: ItemPageProps) {
       </div>
 
       <div className="rounded-2xl border border-border/70 bg-card/80 px-4 py-4 text-sm text-foreground">
-        {item.itemType === "page" ? (
+        {item.itemType === "normalized_text" && item.itemContentPayload ? (
+          <NormalizedContentRenderer blocks={JSON.parse(item.itemContentPayload)} />
+        ) : item.itemType === "page" ? (
           <div className="space-y-2">
             <p className="whitespace-pre-wrap text-foreground">{item.itemContent}</p>
           </div>

@@ -25,6 +25,7 @@ export const courses = pgTable("courses", {
     .$type<"true" | "false">()
     .default("false")
     .notNull(),
+  sourceMetadata: text("source_metadata"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -56,10 +57,11 @@ export const modules = pgTable("modules", {
     .references(() => courses.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   order: integer("order").notNull(),
+  sourceRef: text("source_ref"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const contentTypeEnum = pgEnum("content_type", ["page", "link"]);
+export const contentTypeEnum = pgEnum("content_type", ["page", "link", "normalized_text"]);
 
 export const contentItems = pgTable("content_items", {
   id: text("id").primaryKey(),
@@ -69,6 +71,8 @@ export const contentItems = pgTable("content_items", {
   type: contentTypeEnum("type").notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
+  contentPayload: text("content_payload"),
+  sourceRef: text("source_ref"),
   order: integer("order").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
