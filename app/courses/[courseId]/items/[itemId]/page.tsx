@@ -96,17 +96,17 @@ export default async function CourseItemPage(props: ItemPageProps) {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-border/70 bg-card/80 px-4 py-4 text-sm text-foreground">
+      <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
         {item.itemType === "normalized_text" && item.itemContentPayload ? (
           <NormalizedContentRenderer blocks={JSON.parse(item.itemContentPayload)} />
         ) : item.itemType === "page" ? (
-          <div className="space-y-2">
-            <p className="whitespace-pre-wrap text-foreground">{item.itemContent}</p>
+          <div className="prose prose-neutral dark:prose-invert max-w-none">
+            <p className="whitespace-pre-wrap text-foreground/90 leading-7">{item.itemContent}</p>
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-muted-foreground">External link</p>
-            <a className="text-foreground underline" href={item.itemContent} target="_blank" rel="noreferrer">
+            <p className="text-muted-foreground text-sm">External link</p>
+            <a className="text-foreground underline hover:text-primary transition-colors" href={item.itemContent} target="_blank" rel="noreferrer">
               {item.itemContent}
             </a>
           </div>
