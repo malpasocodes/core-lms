@@ -30,7 +30,7 @@ export async function createUserAction(formData: FormData) {
     await client.users.createUser({
       emailAddress: [email],
       password,
-      publicMetadata: { role },
+      publicMetadata: { role, approved: true },
     });
   } catch (error: unknown) {
     const clerkError = error as { errors?: Array<{ message?: string }> };
@@ -39,6 +39,55 @@ export async function createUserAction(formData: FormData) {
   }
 
   redirect("/admin/roster?notice=User%20added");
+}
+
+export async function approveUserAction(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin) redirect("/sign-in");
+
+  const userId = (formData.get("userId") as string | null)?.trim();
+  const role = (formData.get("role") as string | null)?.trim();
+
+  if (!userId || !role) {
+    redirect("/admin/roster?view=approve&error=Missing%20fields");
+  }
+  if (!allowedRoles.includes(role as (typeof allowedRoles)[number])) {
+    redirect("/admin/roster?view=approve&error=Invalid%20role");
+  }
+
+  try {
+    const client = await clerkClient();
+    await client.users.updateUser(userId, {
+      publicMetadata: { role, approved: true },
+    });
+  } catch {
+    redirect("/admin/roster?view=approve&error=Failed%20to%20approve%20user");
+  }
+
+  redirect("/admin/roster?view=approve&notice=User%20approved");
+}
+
+export async function rejectUserAction(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin) redirect("/sign-in");
+
+  const userId = (formData.get("userId") as string | null)?.trim();
+  if (!userId) {
+    redirect("/admin/roster?view=approve&error=Missing%20user");
+  }
+
+  if (userId === admin.id) {
+    redirect("/admin/roster?view=approve&error=Cannot%20reject%20your%20own%20account");
+  }
+
+  try {
+    const client = await clerkClient();
+    await client.users.deleteUser(userId);
+  } catch {
+    redirect("/admin/roster?view=approve&error=Failed%20to%20reject%20user");
+  }
+
+  redirect("/admin/roster?view=approve&notice=User%20rejected");
 }
 
 export async function deleteUserAction(formData: FormData) {
@@ -80,8 +129,11 @@ export async function updateUserRoleAction(formData: FormData) {
 
   try {
     const client = await clerkClient();
+    // Get existing metadata to preserve approved flag
+    const user = await client.users.getUser(userId);
+    const existingMetadata = user.publicMetadata as Record<string, unknown>;
     await client.users.updateUser(userId, {
-      publicMetadata: { role: role as Role },
+      publicMetadata: { ...existingMetadata, role: role as Role },
     });
   } catch {
     redirect("/admin/roster?error=Failed%20to%20update%20role");

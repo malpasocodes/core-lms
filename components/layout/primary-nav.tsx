@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 import { cn } from "@/lib/utils";
@@ -15,6 +15,63 @@ type NavItem = {
 type PrimaryNavProps = {
   user?: { email: string; role: "learner" | "instructor" | "admin" };
 };
+
+function RosterDropdown({ isActive }: { isActive: boolean }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={cn(
+          "flex items-center gap-1 rounded-md px-3 py-1 transition hover:bg-background/70 hover:text-foreground",
+          isActive && "bg-background/70 text-foreground"
+        )}
+      >
+        Roster
+        <svg
+          className={cn("h-3 w-3 transition-transform", open && "rotate-180")}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-md border border-border bg-card py-1 shadow-lg">
+          <Link
+            href="/admin/roster?view=roster"
+            className="block px-4 py-2 text-sm hover:bg-background/70"
+            onClick={() => setOpen(false)}
+          >
+            View Roster
+          </Link>
+          <Link
+            href="/admin/roster?view=approve"
+            className="block px-4 py-2 text-sm hover:bg-background/70"
+            onClick={() => setOpen(false)}
+          >
+            Approve Users
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function PrimaryNav({ user }: PrimaryNavProps) {
   const pathname = usePathname();
@@ -30,9 +87,7 @@ export function PrimaryNav({ user }: PrimaryNavProps) {
       ]
     : [];
 
-  if (user?.role === "admin") {
-    navItems.push({ label: "Roster", href: "/admin/roster" });
-  }
+  const isAdmin = user?.role === "admin";
 
   return (
     <div className="flex items-center gap-4">
@@ -50,6 +105,7 @@ export function PrimaryNav({ user }: PrimaryNavProps) {
               {item.label}
             </Link>
           ))}
+          {isAdmin && <RosterDropdown isActive={isActive("/admin/roster")} />}
         </nav>
 
         {/* Mobile menu button */}
@@ -81,6 +137,32 @@ export function PrimaryNav({ user }: PrimaryNavProps) {
                   {item.label}
                 </Link>
               ))}
+              {isAdmin && (
+                <>
+                  <div className="mt-2 border-t border-border pt-2">
+                    <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Roster
+                    </p>
+                  </div>
+                  <Link
+                    href="/admin/roster?view=roster"
+                    className={cn(
+                      "rounded-md px-3 py-2 text-sm font-medium transition hover:bg-background/80 hover:text-foreground",
+                      pathname?.includes("/admin/roster") && "bg-background/70 text-foreground"
+                    )}
+                    onClick={() => setOpen(false)}
+                  >
+                    View Roster
+                  </Link>
+                  <Link
+                    href="/admin/roster?view=approve"
+                    className="rounded-md px-3 py-2 text-sm font-medium transition hover:bg-background/80 hover:text-foreground"
+                    onClick={() => setOpen(false)}
+                  >
+                    Approve Users
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}
