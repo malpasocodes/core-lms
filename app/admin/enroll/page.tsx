@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default async function AdminEnrollPage() {
   const user = await getCurrentUser();
   if (!user) {
-    redirect("/auth/login");
+    redirect("/sign-in");
   }
   if (user.role !== "admin") {
     redirect("/dashboard");

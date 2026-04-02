@@ -46,7 +46,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
   }
 
   if (!user) {
-    redirect("/auth/login");
+    redirect("/sign-in");
   }
 
   const isOwner = user.role === "instructor" && user.id === course.instructorId;

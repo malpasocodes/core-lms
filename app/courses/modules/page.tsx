@@ -14,7 +14,7 @@ import { DeleteModuleForm } from "./_components/delete-module-form";
 export default async function ModulesPage() {
   const user = await getCurrentUser();
   if (!user) {
-    redirect("/auth/login");
+    redirect("/sign-in");
   }
   const isAdmin = user.role === "admin";
   const isInstructor = user.role === "instructor";

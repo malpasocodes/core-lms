@@ -15,7 +15,7 @@ import { DeleteContentForm } from "./_components/delete-content-form";
 export default async function ContentPage() {
   const user = await getCurrentUser();
   if (!user) {
-    redirect("/auth/login");
+    redirect("/sign-in");
   }
   const isAdmin = user.role === "admin";
   const isInstructor = user.role === "instructor";

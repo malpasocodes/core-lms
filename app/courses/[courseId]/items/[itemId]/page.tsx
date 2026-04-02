@@ -19,7 +19,7 @@ export default async function CourseItemPage(props: ItemPageProps) {
   if (!courseId || !itemId) notFound();
 
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const db = await getDb();
   const itemRow = await db

@@ -22,7 +22,7 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
   if (!courseId || !assignmentId) notFound();
 
   const user = await getCurrentUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/sign-in");
 
   const db = await getDb();
   const assignmentRow = await db

@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 export default async function AdminPage() {
   const user = await getCurrentUser();
   if (!user) {
-    redirect("/auth/login");
+    redirect("/sign-in");
   }
   if (user.role !== "admin") {
     redirect("/dashboard");
