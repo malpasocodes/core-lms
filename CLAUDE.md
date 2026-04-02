@@ -20,18 +20,38 @@ npm run db:migrate   # Apply migrations to database
 
 ### Tech Stack
 - **Framework:** Next.js 16 App Router with React 19 Server Components
-- **Database:** PostgreSQL on Neon with Drizzle ORM
+- **Database:** PostgreSQL on Neon with Drizzle ORM (`@neondatabase/serverless`)
 - **Styling:** Tailwind CSS 4, Radix UI, shadcn components
-- **Auth:** Custom session-based auth with bcrypt, HTTP-only cookies
+- **Auth:** Clerk (`@clerk/nextjs`) — roles stored in `user.publicMetadata.role`
+- **Icons:** HugeIcons (`@hugeicons/react`)
+- **Webhooks:** svix (for Clerk webhook verification)
 
 ### Key Directories
 - `app/` - Next.js pages using App Router (file-based routing)
 - `lib/` - Server-side logic: auth, database, server actions
 - `components/ui/` - Reusable UI components (shadcn-based)
 - `drizzle/` - SQL migration files
+- `scripts/` - Database migration and ingestion scripts
+
+### Authentication (`lib/auth.ts`)
+Clerk-based. Roles (`learner`, `instructor`, `admin`) live in Clerk `publicMetadata.role`.
+
+Helper functions:
+- `getCurrentUser()` — returns `{ id, email, role }` or null
+- `requireUser()` — redirects to `/sign-in` if unauthenticated
+- `requireAdmin()`, `requireInstructor()`, `requireLearner()` — redirects to `/dashboard` if wrong role
+
+**Middleware (`middleware.ts`):** Clerk middleware gates all routes. Public routes: `/`, `/sign-in(.*)`, `/sign-up(.*)`. Users without an approved status are redirected to `/pending-approval` (checked via `publicMetadata.approved`). Existing users at migration time are grandfathered in.
+
+### Database Schema (`lib/schema.ts`)
+Core tables: `users`, `courses`, `modules`, `contentItems`, `enrollments`, `assignments`, `submissions`, `grades`, `completions`
+
+- `contentItems.type` enum: `page`, `link`, `normalized_text`
+- `users.role` enum: `learner`, `instructor`, `admin`
+- No sessions table — Clerk handles sessions
 
 ### Server Actions Pattern
-All mutations use Server Actions (no REST API). Pattern:
+All mutations use Server Actions (no REST API):
 ```typescript
 "use server"
 export async function actionName(formData: FormData) {
@@ -41,27 +61,19 @@ export async function actionName(formData: FormData) {
 }
 ```
 
-### Database Schema (`lib/schema.ts`)
-Core tables: `users`, `sessions`, `courses`, `modules`, `contentItems`, `enrollments`, `assignments`, `submissions`, `grades`, `completions`
-
-### Authentication (`lib/auth.ts`)
-- Three roles: `learner`, `instructor`, `admin`
-- Helper functions: `getCurrentUser()`, `requireUser()`, `requireAdmin()`, `requireInstructor()`, `requireLearner()`
-- Sessions stored in DB with 7-day TTL
+Server actions live in `lib/*-actions.ts` files (e.g., `course-actions.ts`, `enrollment-actions.ts`).
 
 ### Route Structure
-- `/auth/login`, `/auth/register` - Authentication
-- `/dashboard` - User dashboard (role-specific)
-- `/courses`, `/courses/[courseId]` - Course management
-- `/admin/*` - Admin pages (roster, enrollment, seeding)
+- `/sign-in`, `/sign-up` — Clerk-managed auth pages
+- `/pending-approval` — shown to users awaiting admin approval
+- `/dashboard` — role-specific dashboard
+- `/courses`, `/courses/[courseId]` — course browsing and detail
+- `/courses/[courseId]/items/[itemId]` — content item viewer
+- `/courses/[courseId]/assignments/[assignmentId]` — assignment detail
+- `/admin/*` — admin pages: roster, enrollment, content ingestion, seeding
 
 ### UI Components (`components/ui/`)
-All form elements use shadcn/ui components for consistency:
-- `Input`, `Textarea`, `Label`, `Button`, `Checkbox` - Form elements
-- `Card`, `Badge`, `Separator` - Layout/display
-- `AlertDialog` - Delete confirmations
-- `Tabs` - Tabbed interfaces
-- Native `<select>` with consistent styling for form submission compatibility
+All form elements use shadcn/ui for consistency. Use native `<select>` (not shadcn Select) for form submission compatibility.
 
 Select styling pattern:
 ```tsx
@@ -83,7 +95,7 @@ Delete confirmation pattern (client component):
 
 ## Environment
 
-Requires `DATABASE_URL` env var pointing to Neon PostgreSQL.
+Requires `DATABASE_URL` (Neon PostgreSQL) and Clerk env vars (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`).
 
 ## Patterns
 
