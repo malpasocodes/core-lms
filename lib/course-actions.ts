@@ -2,10 +2,31 @@
 
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { clerkClient } from "@clerk/nextjs/server";
 
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { courses, users } from "@/lib/schema";
+
+async function upsertInstructorFromClerk(instructorId: string): Promise<boolean> {
+  const client = await clerkClient();
+  let clerkUser;
+  try {
+    clerkUser = await client.users.getUser(instructorId);
+  } catch {
+    return false;
+  }
+  const metadata = clerkUser.publicMetadata as Record<string, unknown>;
+  if (metadata.role !== "instructor") return false;
+
+  const email = clerkUser.primaryEmailAddress?.emailAddress ?? "";
+  const db = await getDb();
+  await db
+    .insert(users)
+    .values({ id: instructorId, email, role: "instructor", passwordHash: "" })
+    .onConflictDoUpdate({ target: users.id, set: { email, role: "instructor" } });
+  return true;
+}
 
 export async function createCourseAction(formData: FormData) {
   const admin = await requireAdmin();
@@ -17,19 +38,15 @@ export async function createCourseAction(formData: FormData) {
   const published = formData.get("published") === "on" ? "true" : "false";
 
   if (!title || !instructorId) {
-    redirect("/dashboard?error=Title%20and%20instructor%20are%20required");
+    redirect("/courses?error=Title%20and%20instructor%20are%20required");
+  }
+
+  const valid = await upsertInstructorFromClerk(instructorId);
+  if (!valid) {
+    redirect("/courses?error=Instructor%20not%20found");
   }
 
   const db = await getDb();
-  const instructor = await db.query.users.findFirst({
-    columns: { id: true, role: true },
-    where: eq(users.id, instructorId),
-  });
-
-  if (!instructor || instructor.role !== "instructor") {
-    redirect("/dashboard?error=Instructor%20not%20found");
-  }
-
   const id = crypto.randomUUID();
 
   await db.insert(courses).values({
@@ -40,7 +57,7 @@ export async function createCourseAction(formData: FormData) {
     instructorId,
   });
 
-  redirect("/dashboard");
+  redirect("/courses");
 }
 
 export async function deleteCourseAction(formData: FormData) {
@@ -70,16 +87,12 @@ export async function updateCourseAction(formData: FormData) {
     redirect("/courses?error=Missing%20fields");
   }
 
-  const db = await getDb();
-  const instructor = await db.query.users.findFirst({
-    columns: { id: true, role: true },
-    where: eq(users.id, instructorId),
-  });
-
-  if (!instructor || instructor.role !== "instructor") {
+  const valid = await upsertInstructorFromClerk(instructorId);
+  if (!valid) {
     redirect("/courses?error=Instructor%20not%20found");
   }
 
+  const db = await getDb();
   await db
     .update(courses)
     .set({
