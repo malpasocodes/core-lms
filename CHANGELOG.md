@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-04-02
+
+### Production Go-Live on Netlify
+- Site is live at https://corelms.org
+- Clerk production instance configured with `corelms.org` domain
+
+### Netlify Migration (from Vercel)
+- Replaced `vercel.json` with `netlify.toml` (build config + `@netlify/plugin-nextjs`)
+- Added `@netlify/plugin-nextjs` as a dev dependency
+- Updated `.gitignore` to exclude `.netlify/`
+
+**Files created:**
+- `netlify.toml`
+
+**Files deleted:**
+- `vercel.json`
+
+### Deployment Bug Fixes
+- Added missing `dotenv` dependency (required by `scripts/ingest-finance.ts` at build time)
+- Fixed stale `/auth/login` redirects → `/sign-in` across 8 pages left over from the Clerk migration
+
+**Files modified:**
+- `app/page.tsx`
+- `app/admin/page.tsx`
+- `app/admin/enroll/page.tsx`
+- `app/courses/[courseId]/page.tsx`
+- `app/courses/[courseId]/items/[itemId]/page.tsx`
+- `app/courses/[courseId]/assignments/[assignmentId]/page.tsx`
+- `app/courses/content/page.tsx`
+- `app/courses/modules/page.tsx`
+
 ## 2026-01-18
 
 ### Course Content Ingestion System
