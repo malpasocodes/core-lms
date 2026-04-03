@@ -8,15 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { courses, users } from "@/lib/schema";
+import { courses } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { clerkClient } from "@clerk/nextjs/server";
 import { CourseForm } from "@/app/dashboard/_components/course-form";
 import { updateCourseAction } from "@/lib/course-actions";
 import { DeleteCourseForm } from "./_components/delete-course-form";
-
-function isInstructor(user: { role: string }) {
-  return user.role === "instructor";
-}
 
 export default async function CoursesPage() {
   const user = await getCurrentUser();
@@ -40,8 +37,14 @@ export default async function CoursesPage() {
           .from(courses)
           .where(eq(courses.instructorId, user.id)),
     isAdmin
-      ? db.select({ id: users.id, email: users.email }).from(users).where(eq(users.role, "instructor"))
-      : [],
+      ? clerkClient().then((client) =>
+          client.users.getUserList({ limit: 500 }).then(({ data }) =>
+            data
+              .filter((u) => (u.publicMetadata as Record<string, unknown>).role === "instructor")
+              .map((u) => ({ id: u.id, email: u.primaryEmailAddress?.emailAddress ?? "" }))
+          )
+        )
+      : Promise.resolve([]),
   ]);
 
   return (
