@@ -8,31 +8,32 @@ CREATE TABLE IF NOT EXISTS sections (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Backfill: create one default section per existing module
+-- Backfill: create one default section per existing module (skip if already backfilled)
 INSERT INTO sections (id, module_id, title, "order", created_at)
-SELECT gen_random_uuid()::text, id, title, 1, NOW() FROM modules;
+SELECT gen_random_uuid()::text, m.id, m.title, 1, NOW()
+FROM modules m
+WHERE NOT EXISTS (SELECT 1 FROM sections s WHERE s.module_id = m.id);
 
--- Add section_id to content_items (nullable initially for backfill)
+-- Add section_id to content_items (nullable initially)
 ALTER TABLE content_items ADD COLUMN IF NOT EXISTS section_id TEXT;
 
--- Backfill: map each content_item to the default section for its module
-UPDATE content_items ci
-SET section_id = s.id
-FROM sections s
-WHERE s.module_id = ci.module_id;
+-- Drop old module_id column from content_items if it exists
+ALTER TABLE content_items DROP COLUMN IF EXISTS module_id;
 
--- Make section_id NOT NULL and add FK
-ALTER TABLE content_items ALTER COLUMN section_id SET NOT NULL;
+-- Drop FK constraint if it exists, then re-add (idempotent)
+ALTER TABLE content_items DROP CONSTRAINT IF EXISTS fk_content_items_section_id;
 ALTER TABLE content_items ADD CONSTRAINT fk_content_items_section_id
   FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE;
 
--- Drop old module_id column from content_items
-ALTER TABLE content_items DROP COLUMN IF EXISTS module_id;
+-- Add section_id to assignments (nullable)
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS section_id TEXT;
 
--- Add section_id to assignments (nullable — backfilled where possible)
-ALTER TABLE assignments ADD COLUMN IF NOT EXISTS section_id TEXT REFERENCES sections(id) ON DELETE SET NULL;
+-- Drop FK constraint if it exists, then re-add (idempotent)
+ALTER TABLE assignments DROP CONSTRAINT IF EXISTS fk_assignments_section_id;
+ALTER TABLE assignments ADD CONSTRAINT fk_assignments_section_id
+  FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE SET NULL;
 
--- Backfill assignments: assign to first section of the course (by module order)
+-- Backfill assignments: assign to first section of the course
 UPDATE assignments a
 SET section_id = (
   SELECT s.id
@@ -41,4 +42,5 @@ SET section_id = (
   WHERE m.course_id = a.course_id
   ORDER BY m."order", s."order"
   LIMIT 1
-);
+)
+WHERE a.section_id IS NULL;
