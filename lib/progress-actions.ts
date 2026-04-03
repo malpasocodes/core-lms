@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { ensureUserInDb } from "@/lib/user-sync";
-import { completions, contentItems, modules } from "@/lib/schema";
+import { completions, contentItems, modules, sections } from "@/lib/schema";
 
 export async function markContentCompleteAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -26,16 +26,16 @@ export async function markContentCompleteAction(formData: FormData) {
   const itemRow = await db
     .select({
       itemId: contentItems.id,
-      moduleId: modules.id,
       courseId: modules.courseId,
     })
     .from(contentItems)
-    .leftJoin(modules, eq(contentItems.moduleId, modules.id))
+    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
     .where(eq(contentItems.id, itemId))
     .limit(1);
 
   const item = itemRow[0];
-  if (!item || !item.moduleId || !item.courseId) {
+  if (!item || !item.courseId) {
     redirect("/dashboard?error=Content%20item%20not%20found");
   }
 

@@ -11,12 +11,13 @@ import { getDb } from "@/lib/db";
 import {
   contentItems,
   modules,
+  sections,
   completions,
   assignments,
   submissions,
 } from "@/lib/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { createContentItemAction, createModuleAction } from "@/lib/module-actions";
+import { createContentItemAction, createModuleAction, createSectionAction } from "@/lib/module-actions";
 import { createAssignmentAction } from "@/lib/assignment-actions";
 import { CourseTabs } from "./_components/course-tabs";
 
@@ -79,23 +80,45 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     .orderBy(modules.order);
 
   const moduleIds = moduleRows.map((m) => m.id);
-  const itemRows =
+
+  const sectionRows =
     moduleIds.length > 0
       ? await db
           .select({
+            id: sections.id,
+            moduleId: sections.moduleId,
+            title: sections.title,
+            order: sections.order,
+          })
+          .from(sections)
+          .where(inArray(sections.moduleId, moduleIds))
+          .orderBy(sections.order)
+      : [];
+
+  const sectionIds = sectionRows.map((s) => s.id);
+
+  const itemRows =
+    sectionIds.length > 0
+      ? await db
+          .select({
             id: contentItems.id,
-            moduleId: contentItems.moduleId,
+            sectionId: contentItems.sectionId,
             title: contentItems.title,
             type: contentItems.type,
             order: contentItems.order,
           })
           .from(contentItems)
-          .where(inArray(contentItems.moduleId, moduleIds))
+          .where(inArray(contentItems.sectionId, sectionIds))
           .orderBy(contentItems.order)
       : [];
 
-  const itemsByModule = moduleIds.reduce<Record<string, typeof itemRows>>((acc, id) => {
-    acc[id] = itemRows.filter((item) => item.moduleId === id);
+  const sectionsByModule = moduleIds.reduce<Record<string, typeof sectionRows>>((acc, id) => {
+    acc[id] = sectionRows.filter((s) => s.moduleId === id);
+    return acc;
+  }, {});
+
+  const itemsBySection = sectionIds.reduce<Record<string, typeof itemRows>>((acc, id) => {
+    acc[id] = itemRows.filter((item) => item.sectionId === id);
     return acc;
   }, {});
 
@@ -104,6 +127,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
       id: assignments.id,
       title: assignments.title,
       description: assignments.description,
+      sectionId: assignments.sectionId,
       createdAt: assignments.createdAt,
     })
     .from(assignments)
@@ -162,6 +186,9 @@ export default async function CourseDetailPage(props: CoursePageProps) {
         )
       : new Set<string>();
 
+  // Build a lookup from sectionId → section title for assignment display
+  const sectionTitleById = Object.fromEntries(sectionRows.map((s) => [s.id, s.title]));
+
   return (
     <div className="space-y-6">
       <div className="space-y-4">
@@ -192,11 +219,18 @@ export default async function CourseDetailPage(props: CoursePageProps) {
               ) : (
                 <ul className="space-y-1">
                   {moduleRows.map((mod) => {
-                    const items = itemsByModule[mod.id] || [];
+                    const modSections = sectionsByModule[mod.id] || [];
+                    const sectionCount = modSections.length;
+                    const itemCount = modSections.reduce(
+                      (sum, s) => sum + (itemsBySection[s.id]?.length ?? 0),
+                      0
+                    );
                     return (
                       <li key={mod.id} className="flex justify-between">
                         <span className="text-foreground">{mod.title}</span>
-                        <span className="text-muted-foreground">{items.length} items</span>
+                        <span className="text-muted-foreground">
+                          {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {itemCount} items
+                        </span>
                       </li>
                     );
                   })}
@@ -223,6 +257,11 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                       >
                         {assignment.title}
                       </a>
+                      {assignment.sectionId && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          — {sectionTitleById[assignment.sectionId] ?? ""}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -243,11 +282,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
           ) : (
             <div className="space-y-4">
               {moduleRows.map((mod) => {
-                const items = itemsByModule[mod.id] || [];
-                const completedCount =
-                  user.role === "learner"
-                    ? items.filter((item) => learnerCompletionSet.has(item.id)).length
-                    : undefined;
+                const modSections = sectionsByModule[mod.id] || [];
                 return (
                   <Card key={mod.id}>
                     <CardHeader>
@@ -256,61 +291,109 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                           <CardTitle className="text-base">{mod.title}</CardTitle>
                           <CardDescription>Order: {mod.order}</CardDescription>
                         </div>
-                        {typeof completedCount === "number" && (
-                          <span className="text-xs font-semibold text-foreground">
-                            {completedCount}/{items.length} completed
-                          </span>
-                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {items.length ? (
-                        <ul className="space-y-2 text-sm">
-                          {items.map((item) => (
-                            <li key={item.id} className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
-                              <a className="text-foreground underline" href={`/courses/${courseId}/items/${item.id}`}>
-                                {item.title}
-                              </a>
-                              <div className="flex items-center gap-2">
-                                {user.role === "learner" && learnerCompletionSet.has(item.id) && (
-                                  <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
-                                    ✓
-                                  </span>
-                                )}
-                                <span className="text-xs uppercase tracking-wide text-muted-foreground">{item.type}</span>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
+                      {modSections.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No sections yet.</p>
                       ) : (
-                        <p className="text-xs text-muted-foreground">No content items yet.</p>
+                        <div className="space-y-3">
+                          {modSections.map((sec) => {
+                            const items = itemsBySection[sec.id] || [];
+                            const completedCount =
+                              user.role === "learner"
+                                ? items.filter((item) => learnerCompletionSet.has(item.id)).length
+                                : undefined;
+                            return (
+                              <div
+                                key={sec.id}
+                                className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm font-semibold text-foreground">{sec.title}</p>
+                                  {typeof completedCount === "number" && (
+                                    <span className="text-xs font-semibold text-foreground">
+                                      {completedCount}/{items.length} completed
+                                    </span>
+                                  )}
+                                </div>
+                                {items.length > 0 ? (
+                                  <ul className="space-y-1 text-sm">
+                                    {items.map((item) => (
+                                      <li
+                                        key={item.id}
+                                        className="flex items-center justify-between rounded border border-border/40 bg-background/60 px-3 py-1.5"
+                                      >
+                                        <a
+                                          className="text-foreground underline"
+                                          href={`/courses/${courseId}/items/${item.id}`}
+                                        >
+                                          {item.title}
+                                        </a>
+                                        <div className="flex items-center gap-2">
+                                          {user.role === "learner" && learnerCompletionSet.has(item.id) && (
+                                            <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
+                                              ✓
+                                            </span>
+                                          )}
+                                          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                            {item.type}
+                                          </span>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground">No content items yet.</p>
+                                )}
+
+                                {canEdit && (
+                                  <form
+                                    action={createContentItemAction}
+                                    className="space-y-2 rounded border border-border/40 bg-background/40 p-3"
+                                  >
+                                    <p className="text-xs font-medium text-foreground">Add content item</p>
+                                    <input type="hidden" name="sectionId" value={sec.id} />
+                                    <div className="space-y-1">
+                                      <Label htmlFor={`title-${sec.id}`}>Item title</Label>
+                                      <Input id={`title-${sec.id}`} name="title" required />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label htmlFor={`type-${sec.id}`}>Type</Label>
+                                      <select
+                                        id={`type-${sec.id}`}
+                                        name="type"
+                                        className="flex h-9 w-full rounded-md border border-input bg-input/20 px-3 py-1 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                                        defaultValue="page"
+                                      >
+                                        <option value="page">Text page</option>
+                                        <option value="link">External link</option>
+                                      </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label htmlFor={`content-${sec.id}`}>Content (text or URL)</Label>
+                                      <Textarea id={`content-${sec.id}`} name="content" rows={2} required />
+                                    </div>
+                                    <Button type="submit" size="sm">Add content item</Button>
+                                  </form>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
 
                       {canEdit && (
-                        <form action={createContentItemAction} className="space-y-3 rounded-md border border-border/60 bg-muted/30 p-4">
-                          <p className="text-xs font-medium text-foreground">Add content item</p>
+                        <form
+                          action={createSectionAction}
+                          className="space-y-2 rounded-md border border-border/60 bg-muted/30 p-3"
+                        >
+                          <p className="text-xs font-medium text-foreground">Add section</p>
                           <input type="hidden" name="moduleId" value={mod.id} />
-                          <div className="space-y-1">
-                            <Label htmlFor={`title-${mod.id}`}>Item title</Label>
-                            <Input id={`title-${mod.id}`} name="title" required />
+                          <div className="flex gap-2">
+                            <Input name="title" placeholder="Section title" required className="h-8 text-sm" />
+                            <Button type="submit" size="sm">Add</Button>
                           </div>
-                          <div className="space-y-1">
-                            <Label htmlFor={`type-${mod.id}`}>Type</Label>
-                            <select
-                              id={`type-${mod.id}`}
-                              name="type"
-                              className="flex h-9 w-full rounded-md border border-input bg-input/20 px-3 py-1 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
-                              defaultValue="page"
-                            >
-                              <option value="page">Text page</option>
-                              <option value="link">External link</option>
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label htmlFor={`content-${mod.id}`}>Content (text or URL)</Label>
-                            <Textarea id={`content-${mod.id}`} name="content" rows={3} required />
-                          </div>
-                          <Button type="submit" size="sm">Add content item</Button>
                         </form>
                       )}
                     </CardContent>
@@ -348,6 +431,11 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                         {assignment.description && (
                           <p className="text-xs text-muted-foreground">{assignment.description}</p>
                         )}
+                        {assignment.sectionId && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Section: {sectionTitleById[assignment.sectionId] ?? ""}
+                          </p>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {user.role === "learner" && (
@@ -372,6 +460,24 @@ export default async function CourseDetailPage(props: CoursePageProps) {
               <CardContent>
                 <form action={createAssignmentAction} className="space-y-3">
                   <input type="hidden" name="courseId" value={courseId} />
+                  <div className="space-y-1">
+                    <Label htmlFor="assignment-section">Section</Label>
+                    <select
+                      id="assignment-section"
+                      name="sectionId"
+                      className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                      defaultValue=""
+                    >
+                      <option value="">No section</option>
+                      {moduleRows.map((mod) =>
+                        (sectionsByModule[mod.id] || []).map((sec) => (
+                          <option key={sec.id} value={sec.id}>
+                            {mod.title} › {sec.title}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
                   <div className="space-y-1">
                     <Label htmlFor="assignment-title">Assignment title</Label>
                     <Input id="assignment-title" name="title" required />
@@ -420,7 +526,9 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                   {moduleRows.map((mod) => (
                     <li key={mod.id} className="flex justify-between text-foreground">
                       <span>{mod.title}</span>
-                      <span className="text-muted-foreground">Order: {mod.order}</span>
+                      <span className="text-muted-foreground">
+                        {(sectionsByModule[mod.id] || []).length} sections
+                      </span>
                     </li>
                   ))}
                 </ul>

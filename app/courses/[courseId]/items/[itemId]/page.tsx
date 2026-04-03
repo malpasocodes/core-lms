@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { contentItems, courses, modules } from "@/lib/schema";
+import { contentItems, courses, modules, sections } from "@/lib/schema";
 import { markContentCompleteAction } from "@/lib/progress-actions";
 import { NormalizedContentRenderer } from "@/components/normalized-content-renderer";
 
@@ -29,13 +29,15 @@ export default async function CourseItemPage(props: ItemPageProps) {
       itemType: contentItems.type,
       itemContent: contentItems.content,
       itemContentPayload: contentItems.contentPayload,
-      moduleId: modules.id,
+      sectionId: sections.id,
+      sectionTitle: sections.title,
       moduleTitle: modules.title,
       courseId: courses.id,
       instructorId: courses.instructorId,
     })
     .from(contentItems)
-    .leftJoin(modules, eq(contentItems.moduleId, modules.id))
+    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
     .leftJoin(courses, eq(modules.courseId, courses.id))
     .where(and(eq(contentItems.id, itemId), eq(courses.id, courseId)))
     .limit(1);
@@ -68,14 +70,14 @@ export default async function CourseItemPage(props: ItemPageProps) {
   }
 
   const siblings =
-    item.moduleId && typeof item.moduleId === "string"
+    item.sectionId && typeof item.sectionId === "string"
       ? await db
           .select({
             id: contentItems.id,
             title: contentItems.title,
           })
           .from(contentItems)
-          .where(eq(contentItems.moduleId, item.moduleId))
+          .where(eq(contentItems.sectionId, item.sectionId))
           .orderBy(contentItems.order)
       : [];
 
@@ -89,7 +91,7 @@ export default async function CourseItemPage(props: ItemPageProps) {
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Content item</p>
         <h1 className="text-3xl font-semibold text-foreground">{item.itemTitle}</h1>
         <p className="text-sm text-muted-foreground">
-          Module: {item.moduleTitle} • Course:{" "}
+          {item.sectionTitle} — {item.moduleTitle} •{" "}
           <Link className="text-foreground underline" href={`/courses/${courseId}`}>
             {courseId}
           </Link>

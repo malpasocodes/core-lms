@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { contentItems, courses, modules } from "@/lib/schema";
+import { contentItems, courses, modules, sections } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { createContentItemAction, updateContentItemAction } from "@/lib/module-actions";
 import { DeleteContentForm } from "./_components/delete-content-form";
@@ -24,27 +24,31 @@ export default async function ContentPage() {
   }
 
   const db = await getDb();
-  const [moduleList, contentList] = await Promise.all([
+  const [sectionList, contentList] = await Promise.all([
     isAdmin
       ? db
           .select({
-            id: modules.id,
-            title: modules.title,
+            id: sections.id,
+            title: sections.title,
+            moduleTitle: modules.title,
             courseTitle: courses.title,
           })
-          .from(modules)
+          .from(sections)
+          .leftJoin(modules, eq(sections.moduleId, modules.id))
           .leftJoin(courses, eq(modules.courseId, courses.id))
-          .orderBy(courses.title, modules.order)
+          .orderBy(courses.title, modules.order, sections.order)
       : db
           .select({
-            id: modules.id,
-            title: modules.title,
+            id: sections.id,
+            title: sections.title,
+            moduleTitle: modules.title,
             courseTitle: courses.title,
           })
-          .from(modules)
+          .from(sections)
+          .leftJoin(modules, eq(sections.moduleId, modules.id))
           .leftJoin(courses, eq(modules.courseId, courses.id))
           .where(eq(courses.instructorId, user.id))
-          .orderBy(courses.title, modules.order),
+          .orderBy(courses.title, modules.order, sections.order),
     isAdmin
       ? db
           .select({
@@ -52,27 +56,31 @@ export default async function ContentPage() {
             title: contentItems.title,
             type: contentItems.type,
             content: contentItems.content,
+            sectionTitle: sections.title,
             moduleTitle: modules.title,
             courseTitle: courses.title,
           })
           .from(contentItems)
-          .leftJoin(modules, eq(contentItems.moduleId, modules.id))
+          .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+          .leftJoin(modules, eq(sections.moduleId, modules.id))
           .leftJoin(courses, eq(modules.courseId, courses.id))
-          .orderBy(courses.title, modules.title, contentItems.order)
+          .orderBy(courses.title, modules.title, sections.title, contentItems.order)
       : db
           .select({
             id: contentItems.id,
             title: contentItems.title,
             type: contentItems.type,
             content: contentItems.content,
+            sectionTitle: sections.title,
             moduleTitle: modules.title,
             courseTitle: courses.title,
           })
           .from(contentItems)
-          .leftJoin(modules, eq(contentItems.moduleId, modules.id))
+          .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+          .leftJoin(modules, eq(sections.moduleId, modules.id))
           .leftJoin(courses, eq(modules.courseId, courses.id))
           .where(eq(courses.instructorId, user.id))
-          .orderBy(courses.title, modules.title, contentItems.order),
+          .orderBy(courses.title, modules.title, sections.title, contentItems.order),
   ]);
 
   return (
@@ -99,7 +107,7 @@ export default async function ContentPage() {
                     <div className="space-y-1">
                       <p className="text-sm font-semibold text-foreground">{item.title}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {item.courseTitle} • {item.moduleTitle}
+                        {item.courseTitle} • {item.moduleTitle} › {item.sectionTitle}
                       </p>
                       <p className="text-xs text-muted-foreground line-clamp-2">{item.content}</p>
                     </div>
@@ -116,25 +124,25 @@ export default async function ContentPage() {
         <Card>
           <CardHeader>
             <CardTitle>Create content</CardTitle>
-            <CardDescription>Add a page or link to a module.</CardDescription>
+            <CardDescription>Add a page or link to a section.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={createContentItemAction} className="space-y-3 text-sm">
               <div className="space-y-1">
-                <Label htmlFor="create-module">Module</Label>
+                <Label htmlFor="create-section">Section</Label>
                 <select
-                  id="create-module"
-                  name="moduleId"
+                  id="create-section"
+                  name="sectionId"
                   required
                   className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
                   defaultValue=""
                 >
                   <option value="" disabled>
-                    Select module
+                    Select section
                   </option>
-                  {moduleList.map((mod) => (
-                    <option key={mod.id} value={mod.id}>
-                      {mod.title} ({mod.courseTitle})
+                  {sectionList.map((sec) => (
+                    <option key={sec.id} value={sec.id}>
+                      {sec.title} ({sec.courseTitle} / {sec.moduleTitle})
                     </option>
                   ))}
                 </select>
@@ -189,7 +197,7 @@ export default async function ContentPage() {
                   </option>
                   {contentList.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.title} ({item.courseTitle} / {item.moduleTitle})
+                      {item.title} ({item.courseTitle} / {item.moduleTitle} › {item.sectionTitle})
                     </option>
                   ))}
                 </select>

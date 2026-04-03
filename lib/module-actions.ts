@@ -5,7 +5,7 @@ import { desc, eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { contentItems, courses, modules } from "@/lib/schema";
+import { contentItems, courses, modules, sections } from "@/lib/schema";
 
 export async function createModuleAction(formData: FormData) {
   const title = (formData.get("title") as string | null)?.trim();
@@ -46,6 +46,51 @@ export async function createModuleAction(formData: FormData) {
   });
 
   redirect(`/courses/${courseId}`);
+}
+
+export async function createSectionAction(formData: FormData) {
+  const title = (formData.get("title") as string | null)?.trim();
+  const moduleId = (formData.get("moduleId") as string | null)?.trim();
+  if (!title || !moduleId) {
+    redirect(`/dashboard?error=Missing%20module%20or%20title`);
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+
+  const db = await getDb();
+  const moduleRow = await db
+    .select({ courseId: modules.courseId, instructorId: courses.instructorId })
+    .from(modules)
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(modules.id, moduleId))
+    .limit(1);
+
+  const mod = moduleRow[0];
+  if (!mod?.courseId) redirect("/dashboard?error=Module%20not%20found");
+
+  const isOwner = user.role === "instructor" && user.id === mod.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect(`/courses/${mod.courseId}?error=Not%20authorized`);
+  }
+
+  const last = await db
+    .select({ order: sections.order })
+    .from(sections)
+    .where(eq(sections.moduleId, moduleId))
+    .orderBy(desc(sections.order))
+    .limit(1);
+  const nextOrder = (last[0]?.order ?? 0) + 1;
+
+  await db.insert(sections).values({
+    id: crypto.randomUUID(),
+    moduleId,
+    title,
+    order: nextOrder,
+  });
+
+  redirect(`/courses/${mod.courseId}`);
 }
 
 export async function updateModuleAction(formData: FormData) {
@@ -132,12 +177,12 @@ export async function deleteModuleAction(formData: FormData) {
 }
 
 export async function createContentItemAction(formData: FormData) {
-  const moduleId = (formData.get("moduleId") as string | null)?.trim();
+  const sectionId = (formData.get("sectionId") as string | null)?.trim();
   const title = (formData.get("title") as string | null)?.trim();
   const type = (formData.get("type") as string | null)?.trim();
   const content = (formData.get("content") as string | null)?.trim();
 
-  if (!moduleId || !title || !type || !content) {
+  if (!sectionId || !title || !type || !content) {
     redirect(`/dashboard?error=Missing%20content%20fields`);
   }
 
@@ -145,52 +190,48 @@ export async function createContentItemAction(formData: FormData) {
   if (!user) redirect("/sign-in");
 
   const db = await getDb();
-  const moduleRow = await db
+  const sectionRow = await db
     .select({
-      moduleId: modules.id,
       courseId: courses.id,
       instructorId: courses.instructorId,
     })
-    .from(modules)
+    .from(sections)
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
     .leftJoin(courses, eq(modules.courseId, courses.id))
-    .where(eq(modules.id, moduleId))
+    .where(eq(sections.id, sectionId))
     .limit(1);
 
-  const module = moduleRow[0];
+  const sec = sectionRow[0];
+  if (!sec?.courseId) redirect("/dashboard?error=Section%20not%20found");
 
-  if (!module || !module.courseId) {
-    redirect("/dashboard?error=Module%20not%20found");
-  }
-
-  const course = { id: module.courseId, instructorId: module.instructorId };
-  const isOwner = user.role === "instructor" && user.id === course.instructorId;
+  const isOwner = user.role === "instructor" && user.id === sec.instructorId;
   const isAdmin = user.role === "admin";
   if (!isOwner && !isAdmin) {
-    redirect(`/courses/${course.id}?error=Not%20authorized`);
+    redirect(`/courses/${sec.courseId}?error=Not%20authorized`);
   }
 
   if (type !== "page" && type !== "link") {
-    redirect(`/courses/${course.id}?error=Invalid%20content%20type`);
+    redirect(`/courses/${sec.courseId}?error=Invalid%20content%20type`);
   }
 
   const last = await db
     .select({ order: contentItems.order })
     .from(contentItems)
-    .where(eq(contentItems.moduleId, moduleId))
+    .where(eq(contentItems.sectionId, sectionId))
     .orderBy(desc(contentItems.order))
     .limit(1);
   const nextOrder = (last[0]?.order ?? 0) + 1;
 
   await db.insert(contentItems).values({
     id: crypto.randomUUID(),
-    moduleId,
+    sectionId,
     title,
     type,
     content,
     order: nextOrder,
   });
 
-  redirect(`/courses/${course.id}`);
+  redirect(`/courses/${sec.courseId}`);
 }
 
 export async function updateContentItemAction(formData: FormData) {
@@ -210,12 +251,12 @@ export async function updateContentItemAction(formData: FormData) {
   const itemRow = await db
     .select({
       id: contentItems.id,
-      moduleId: contentItems.moduleId,
       courseId: courses.id,
       instructorId: courses.instructorId,
     })
     .from(contentItems)
-    .leftJoin(modules, eq(contentItems.moduleId, modules.id))
+    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
     .leftJoin(courses, eq(modules.courseId, courses.id))
     .where(eq(contentItems.id, itemId))
     .limit(1);
@@ -264,7 +305,8 @@ export async function deleteContentItemAction(formData: FormData) {
       instructorId: courses.instructorId,
     })
     .from(contentItems)
-    .leftJoin(modules, eq(contentItems.moduleId, modules.id))
+    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
     .leftJoin(courses, eq(modules.courseId, courses.id))
     .where(eq(contentItems.id, itemId))
     .limit(1);

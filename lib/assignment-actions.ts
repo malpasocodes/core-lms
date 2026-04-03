@@ -13,6 +13,7 @@ export async function createAssignmentAction(formData: FormData) {
   if (!user) redirect("/sign-in");
 
   const courseId = (formData.get("courseId") as string | null)?.trim();
+  const sectionId = (formData.get("sectionId") as string | null)?.trim() || null;
   const title = (formData.get("title") as string | null)?.trim();
   const description = ((formData.get("description") as string | null) || "").trim();
 
@@ -39,6 +40,7 @@ export async function createAssignmentAction(formData: FormData) {
   await db.insert(assignments).values({
     id: crypto.randomUUID(),
     courseId,
+    sectionId,
     title,
     description,
   });

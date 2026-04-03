@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { courses, modules, contentItems } from "@/lib/schema";
+import { courses, modules, sections, contentItems } from "@/lib/schema";
 import { requireAdmin } from "@/lib/auth";
 
 interface NormalizedSource {
@@ -80,17 +80,26 @@ export async function ingestNormalizedCourseAction(formData: FormData) {
       sourceRef: String(chapter.chapter_number),
     });
 
-    // 3. Create Content Items (sections)
+    // 3. Create Sections and their ContentItems
     for (const [sectionIndex, section] of chapter.sections.entries()) {
+      const sectionId = crypto.randomUUID();
+      await db.insert(sections).values({
+        id: sectionId,
+        moduleId,
+        title: `${section.section_number} ${section.title}`,
+        order: sectionIndex + 1,
+        sourceRef: section.section_number,
+      });
+
       await db.insert(contentItems).values({
         id: crypto.randomUUID(),
-        moduleId,
+        sectionId,
         type: "normalized_text",
         title: `${section.section_number} ${section.title}`,
-        content: "", // Empty for normalized_text type
+        content: "",
         contentPayload: JSON.stringify(section.blocks),
         sourceRef: section.section_number,
-        order: sectionIndex + 1,
+        order: 1,
       });
     }
   }

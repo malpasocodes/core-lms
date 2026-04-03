@@ -19,7 +19,7 @@ import { join } from "path";
 config({ path: ".env.local" });
 
 // Import schema types
-import { courses, modules, contentItems } from "../lib/schema";
+import { courses, modules, sections, contentItems } from "../lib/schema";
 
 interface NormalizedBlock {
   type: string;
@@ -136,17 +136,26 @@ async function main() {
 
     console.log(`  Created module: ${moduleTitle}`);
 
-    // Create content items (sections)
+    // Create sections and their content items
     for (const [sectionIndex, section] of chapter.sections.entries()) {
+      const sectionId = crypto.randomUUID();
+      const sectionTitle = `${section.section_number} ${section.title}`;
+      await db.insert(sections).values({
+        id: sectionId,
+        moduleId,
+        title: sectionTitle,
+        order: sectionIndex + 1,
+        sourceRef: section.section_number,
+      });
       await db.insert(contentItems).values({
         id: crypto.randomUUID(),
-        moduleId,
+        sectionId,
         type: "normalized_text",
-        title: `${section.section_number} ${section.title}`,
-        content: "", // Empty for normalized_text type
+        title: sectionTitle,
+        content: "",
         contentPayload: JSON.stringify(section.blocks),
         sourceRef: section.section_number,
-        order: sectionIndex + 1,
+        order: 1,
       });
       totalSections++;
     }

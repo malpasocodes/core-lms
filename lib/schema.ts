@@ -61,13 +61,24 @@ export const modules = pgTable("modules", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const contentTypeEnum = pgEnum("content_type", ["page", "link", "normalized_text"]);
-
-export const contentItems = pgTable("content_items", {
+export const sections = pgTable("sections", {
   id: text("id").primaryKey(),
   moduleId: text("module_id")
     .notNull()
     .references(() => modules.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  order: integer("order").notNull(),
+  sourceRef: text("source_ref"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const contentTypeEnum = pgEnum("content_type", ["page", "link", "normalized_text"]);
+
+export const contentItems = pgTable("content_items", {
+  id: text("id").primaryKey(),
+  sectionId: text("section_id")
+    .notNull()
+    .references(() => sections.id, { onDelete: "cascade" }),
   type: contentTypeEnum("type").notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
@@ -78,6 +89,7 @@ export const contentItems = pgTable("content_items", {
 });
 
 export type Module = typeof modules.$inferSelect;
+export type Section = typeof sections.$inferSelect;
 export type ContentItem = typeof contentItems.$inferSelect;
 
 export const assignments = pgTable("assignments", {
@@ -85,6 +97,7 @@ export const assignments = pgTable("assignments", {
   courseId: text("course_id")
     .notNull()
     .references(() => courses.id, { onDelete: "cascade" }),
+  sectionId: text("section_id").references(() => sections.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   description: text("description"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
