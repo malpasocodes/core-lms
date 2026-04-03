@@ -45,7 +45,7 @@ export async function createModuleAction(formData: FormData) {
     order: nextOrder,
   });
 
-  redirect(`/courses/${courseId}`);
+  redirect(`/courses/${courseId}?tab=modules`);
 }
 
 export async function createSectionAction(formData: FormData) {
@@ -90,7 +90,7 @@ export async function createSectionAction(formData: FormData) {
     order: nextOrder,
   });
 
-  redirect(`/courses/${mod.courseId}`);
+  redirect(`/courses/${mod.courseId}?tab=modules`);
 }
 
 export async function updateModuleAction(formData: FormData) {

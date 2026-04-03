@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { courses, modules, users } from "@/lib/schema";
+import { courses, modules, sections, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { createModuleAction, updateModuleAction } from "@/lib/module-actions";
+import { createModuleAction, createSectionAction, updateModuleAction } from "@/lib/module-actions";
 import { DeleteModuleForm } from "./_components/delete-module-form";
 
 export default async function ModulesPage() {
@@ -23,7 +23,7 @@ export default async function ModulesPage() {
   }
 
   const db = await getDb();
-  const [courseList, moduleList] = await Promise.all([
+  const [courseList, moduleList, sectionList] = await Promise.all([
     isAdmin
       ? db
           .select({ id: courses.id, title: courses.title, instructorEmail: users.email })
@@ -57,6 +57,32 @@ export default async function ModulesPage() {
           .leftJoin(courses, eq(modules.courseId, courses.id))
           .where(eq(courses.instructorId, user.id))
           .orderBy(courses.title, modules.order),
+    isAdmin
+      ? db
+          .select({
+            id: sections.id,
+            title: sections.title,
+            moduleId: sections.moduleId,
+            moduleTitle: modules.title,
+            courseTitle: courses.title,
+          })
+          .from(sections)
+          .leftJoin(modules, eq(sections.moduleId, modules.id))
+          .leftJoin(courses, eq(modules.courseId, courses.id))
+          .orderBy(courses.title, modules.order, sections.order)
+      : db
+          .select({
+            id: sections.id,
+            title: sections.title,
+            moduleId: sections.moduleId,
+            moduleTitle: modules.title,
+            courseTitle: courses.title,
+          })
+          .from(sections)
+          .leftJoin(modules, eq(sections.moduleId, modules.id))
+          .leftJoin(courses, eq(modules.courseId, courses.id))
+          .where(eq(courses.instructorId, user.id))
+          .orderBy(courses.title, modules.order, sections.order),
   ]);
 
   return (
@@ -189,6 +215,66 @@ export default async function ModulesPage() {
           </CardHeader>
           <CardContent>
             <DeleteModuleForm modules={moduleList} />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>View sections</CardTitle>
+            <CardDescription>Sections grouped by module.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-foreground">
+            {sectionList.length === 0 ? (
+              <p className="text-muted-foreground">No sections found.</p>
+            ) : (
+              <div className="divide-y divide-border rounded-md border border-border/70 bg-background/80">
+                {sectionList.map((sec) => (
+                  <div key={sec.id} className="flex items-center justify-between px-3 py-2">
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-semibold text-foreground">{sec.title}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {sec.courseTitle} • {sec.moduleTitle}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Create section</CardTitle>
+            <CardDescription>Add a section to a module.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={createSectionAction} className="space-y-3 text-sm">
+              <div className="space-y-1">
+                <Label htmlFor="section-module">Module</Label>
+                <select
+                  id="section-module"
+                  name="moduleId"
+                  required
+                  className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                  defaultValue=""
+                >
+                  <option value="" disabled>Select module</option>
+                  {moduleList.map((mod) => (
+                    <option key={mod.id} value={mod.id}>
+                      {mod.title} ({mod.courseTitle})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="section-title">Section title</Label>
+                <Input id="section-title" name="title" required />
+              </div>
+              <Button type="submit" className="w-full">Create section</Button>
+            </form>
           </CardContent>
         </Card>
       </div>
