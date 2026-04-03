@@ -5,6 +5,7 @@ import { desc, eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { uploadPdfToR2 } from "@/lib/r2";
 import { contentItems, courses, modules, sections } from "@/lib/schema";
 
 export async function createModuleAction(formData: FormData) {
@@ -232,6 +233,69 @@ export async function createContentItemAction(formData: FormData) {
   });
 
   redirect(`/courses/${sec.courseId}`);
+}
+
+export async function uploadPdfContentItemAction(formData: FormData) {
+  const sectionId = (formData.get("sectionId") as string | null)?.trim();
+  const title = (formData.get("title") as string | null)?.trim();
+  const file = formData.get("file") as File | null;
+
+  if (!sectionId || !title || !file || file.size === 0) {
+    redirect("/dashboard?error=Missing%20required%20fields");
+  }
+
+  if (file.type !== "application/pdf") {
+    redirect("/dashboard?error=File%20must%20be%20a%20PDF");
+  }
+
+  const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
+  if (file.size > MAX_BYTES) {
+    redirect("/dashboard?error=PDF%20must%20be%20under%2020MB");
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+
+  const db = await getDb();
+  const sectionRow = await db
+    .select({ courseId: courses.id, instructorId: courses.instructorId })
+    .from(sections)
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(sections.id, sectionId))
+    .limit(1);
+
+  const sec = sectionRow[0];
+  if (!sec?.courseId) redirect("/dashboard?error=Section%20not%20found");
+
+  const isOwner = user.role === "instructor" && user.id === sec.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect(`/courses/${sec.courseId}?error=Not%20authorized`);
+  }
+
+  const key = `${sec.courseId}/${sectionId}/${crypto.randomUUID()}.pdf`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const publicUrl = await uploadPdfToR2(buffer, key);
+
+  const last = await db
+    .select({ order: contentItems.order })
+    .from(contentItems)
+    .where(eq(contentItems.sectionId, sectionId))
+    .orderBy(desc(contentItems.order))
+    .limit(1);
+  const nextOrder = (last[0]?.order ?? 0) + 1;
+
+  await db.insert(contentItems).values({
+    id: crypto.randomUUID(),
+    sectionId,
+    type: "pdf",
+    title,
+    content: publicUrl,
+    order: nextOrder,
+  });
+
+  redirect(`/courses/${sec.courseId}?tab=modules`);
 }
 
 export async function updateContentItemAction(formData: FormData) {

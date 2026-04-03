@@ -17,7 +17,7 @@ import {
   submissions,
 } from "@/lib/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { createContentItemAction, createModuleAction, createSectionAction } from "@/lib/module-actions";
+import { createContentItemAction, createModuleAction, createSectionAction, uploadPdfContentItemAction } from "@/lib/module-actions";
 import { createAssignmentAction } from "@/lib/assignment-actions";
 import { CourseTabs } from "./_components/course-tabs";
 
@@ -348,34 +348,60 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                 )}
 
                                 {canEdit && (
-                                  <form
-                                    action={createContentItemAction}
-                                    className="space-y-2 rounded border border-border/40 bg-background/40 p-3"
-                                  >
-                                    <p className="text-xs font-medium text-foreground">Add content item</p>
-                                    <input type="hidden" name="sectionId" value={sec.id} />
-                                    <div className="space-y-1">
-                                      <Label htmlFor={`title-${sec.id}`}>Item title</Label>
-                                      <Input id={`title-${sec.id}`} name="title" required />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <Label htmlFor={`type-${sec.id}`}>Type</Label>
-                                      <select
-                                        id={`type-${sec.id}`}
-                                        name="type"
-                                        className="flex h-9 w-full rounded-md border border-input bg-input/20 px-3 py-1 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
-                                        defaultValue="page"
-                                      >
-                                        <option value="page">Text page</option>
-                                        <option value="link">External link</option>
-                                      </select>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <Label htmlFor={`content-${sec.id}`}>Content (text or URL)</Label>
-                                      <Textarea id={`content-${sec.id}`} name="content" rows={2} required />
-                                    </div>
-                                    <Button type="submit" size="sm">Add content item</Button>
-                                  </form>
+                                  <div className="space-y-2">
+                                    <form
+                                      action={createContentItemAction}
+                                      className="space-y-2 rounded border border-border/40 bg-background/40 p-3"
+                                    >
+                                      <p className="text-xs font-medium text-foreground">Add content item</p>
+                                      <input type="hidden" name="sectionId" value={sec.id} />
+                                      <div className="space-y-1">
+                                        <Label htmlFor={`title-${sec.id}`}>Item title</Label>
+                                        <Input id={`title-${sec.id}`} name="title" required />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label htmlFor={`type-${sec.id}`}>Type</Label>
+                                        <select
+                                          id={`type-${sec.id}`}
+                                          name="type"
+                                          className="flex h-9 w-full rounded-md border border-input bg-input/20 px-3 py-1 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                                          defaultValue="page"
+                                        >
+                                          <option value="page">Text page</option>
+                                          <option value="link">External link</option>
+                                        </select>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label htmlFor={`content-${sec.id}`}>Content (text or URL)</Label>
+                                        <Textarea id={`content-${sec.id}`} name="content" rows={2} required />
+                                      </div>
+                                      <Button type="submit" size="sm">Add content item</Button>
+                                    </form>
+
+                                    <form
+                                      action={uploadPdfContentItemAction}
+                                      encType="multipart/form-data"
+                                      className="space-y-2 rounded border border-border/40 bg-background/40 p-3"
+                                    >
+                                      <p className="text-xs font-medium text-foreground">Upload PDF</p>
+                                      <input type="hidden" name="sectionId" value={sec.id} />
+                                      <div className="space-y-1">
+                                        <Label htmlFor={`pdf-title-${sec.id}`}>PDF title</Label>
+                                        <Input id={`pdf-title-${sec.id}`} name="title" required />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label htmlFor={`pdf-file-${sec.id}`}>File</Label>
+                                        <Input
+                                          id={`pdf-file-${sec.id}`}
+                                          name="file"
+                                          type="file"
+                                          accept="application/pdf"
+                                          required
+                                        />
+                                      </div>
+                                      <Button type="submit" size="sm">Upload PDF</Button>
+                                    </form>
+                                  </div>
                                 )}
                               </div>
                             );

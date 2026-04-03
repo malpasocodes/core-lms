@@ -105,6 +105,22 @@ export default async function CourseItemPage(props: ItemPageProps) {
           <div className="prose prose-neutral dark:prose-invert max-w-none">
             <p className="whitespace-pre-wrap text-foreground/90 leading-7">{item.itemContent}</p>
           </div>
+        ) : item.itemType === "pdf" ? (
+          <div className="space-y-3">
+            <iframe
+              src={item.itemContent}
+              className="w-full rounded border border-border/60"
+              style={{ height: "80vh" }}
+            />
+            <a
+              href={item.itemContent}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-foreground underline hover:text-primary transition-colors"
+            >
+              Open PDF in new tab
+            </a>
+          </div>
         ) : (
           <div className="space-y-2">
             <p className="text-muted-foreground text-sm">External link</p>
