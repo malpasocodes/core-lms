@@ -5,6 +5,8 @@ import { and, eq } from "drizzle-orm";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
@@ -119,7 +121,7 @@ export default async function CourseItemPage(props: ItemPageProps) {
           </div>
         ) : item.itemType === "markdown" ? (
           <div className="prose prose-neutral dark:prose-invert max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.itemContent}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{item.itemContent}</ReactMarkdown>
           </div>
         ) : item.itemType === "pdf" ? (
           <div className="space-y-3">
