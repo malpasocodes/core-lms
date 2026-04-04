@@ -12,6 +12,7 @@ import { getDb } from "@/lib/db";
 import { contentItems, courses, modules, sections } from "@/lib/schema";
 import { markContentCompleteAction } from "@/lib/progress-actions";
 import { NormalizedContentRenderer } from "@/components/normalized-content-renderer";
+import { MarkdownItemEditor } from "@/components/markdown-item-editor";
 
 type ItemPageProps = {
   params: Promise<{ courseId: string; itemId: string }>;
@@ -101,6 +102,14 @@ export default async function CourseItemPage(props: ItemPageProps) {
         </p>
       </div>
 
+      {item.itemType === "markdown" && (isOwner || isAdmin) ? (
+        <MarkdownItemEditor
+          itemId={itemId}
+          initialTitle={item.itemTitle}
+          initialContent={item.itemContent}
+          redirectTo={`/courses/${courseId}/items/${itemId}`}
+        />
+      ) : (
       <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
         {item.itemType === "normalized_text" && item.itemContentPayload ? (
           <NormalizedContentRenderer blocks={JSON.parse(item.itemContentPayload)} />
@@ -137,6 +146,7 @@ export default async function CourseItemPage(props: ItemPageProps) {
           </div>
         )}
       </div>
+      )}
 
       <div className="flex items-center justify-between">
         {prev ? (

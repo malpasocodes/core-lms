@@ -303,6 +303,7 @@ export async function updateContentItemAction(formData: FormData) {
   const title = (formData.get("title") as string | null)?.trim();
   const type = (formData.get("type") as string | null)?.trim();
   const content = (formData.get("content") as string | null)?.trim();
+  const redirectTo = (formData.get("redirectTo") as string | null)?.trim();
 
   if (!itemId || !title || !type || !content) {
     redirect("/courses/content?error=Missing%20fields");
@@ -349,7 +350,7 @@ export async function updateContentItemAction(formData: FormData) {
     })
     .where(eq(contentItems.id, itemId));
 
-  redirect("/courses/content?notice=Content%20updated");
+  redirect(redirectTo || "/courses/content?notice=Content%20updated");
 }
 
 export async function deleteContentItemAction(formData: FormData) {
