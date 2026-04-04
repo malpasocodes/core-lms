@@ -369,11 +369,12 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                         >
                                           <option value="page">Text page</option>
                                           <option value="link">External link</option>
+                                          <option value="markdown">Markdown document</option>
                                         </select>
                                       </div>
                                       <div className="space-y-1">
-                                        <Label htmlFor={`content-${sec.id}`}>Content (text or URL)</Label>
-                                        <Textarea id={`content-${sec.id}`} name="content" rows={2} required />
+                                        <Label htmlFor={`content-${sec.id}`}>Content (text, URL, or Markdown)</Label>
+                                        <Textarea id={`content-${sec.id}`} name="content" rows={8} required />
                                       </div>
                                       <Button type="submit" size="sm">Add content item</Button>
                                     </form>

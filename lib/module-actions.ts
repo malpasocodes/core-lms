@@ -211,7 +211,7 @@ export async function createContentItemAction(formData: FormData) {
     redirect(`/courses/${sec.courseId}?error=Not%20authorized`);
   }
 
-  if (type !== "page" && type !== "link") {
+  if (type !== "page" && type !== "link" && type !== "markdown") {
     redirect(`/courses/${sec.courseId}?error=Invalid%20content%20type`);
   }
 
@@ -336,7 +336,7 @@ export async function updateContentItemAction(formData: FormData) {
     redirect("/courses/content?error=Not%20authorized");
   }
 
-  if (type !== "page" && type !== "link") {
+  if (type !== "page" && type !== "link" && type !== "markdown") {
     redirect("/courses/content?error=Invalid%20type");
   }
 

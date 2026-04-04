@@ -3,6 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -104,6 +107,10 @@ export default async function CourseItemPage(props: ItemPageProps) {
         ) : item.itemType === "page" ? (
           <div className="prose prose-neutral dark:prose-invert max-w-none">
             <p className="whitespace-pre-wrap text-foreground/90 leading-7">{item.itemContent}</p>
+          </div>
+        ) : item.itemType === "markdown" ? (
+          <div className="prose prose-neutral dark:prose-invert max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.itemContent}</ReactMarkdown>
           </div>
         ) : item.itemType === "pdf" ? (
           <div className="space-y-3">

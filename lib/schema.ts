@@ -72,7 +72,7 @@ export const sections = pgTable("sections", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const contentTypeEnum = pgEnum("content_type", ["page", "link", "normalized_text", "pdf"]);
+export const contentTypeEnum = pgEnum("content_type", ["page", "link", "normalized_text", "pdf", "markdown"]);
 
 export const contentItems = pgTable("content_items", {
   id: text("id").primaryKey(),
