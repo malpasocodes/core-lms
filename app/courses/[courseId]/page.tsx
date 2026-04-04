@@ -348,60 +348,68 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                 )}
 
                                 {canEdit && (
-                                  <div className="space-y-2">
-                                    <form
-                                      action={createContentItemAction}
-                                      className="space-y-2 rounded border border-border/40 bg-background/40 p-3"
-                                    >
-                                      <p className="text-xs font-medium text-foreground">Add content item</p>
-                                      <input type="hidden" name="sectionId" value={sec.id} />
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`title-${sec.id}`}>Item title</Label>
-                                        <Input id={`title-${sec.id}`} name="title" required />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`type-${sec.id}`}>Type</Label>
-                                        <select
-                                          id={`type-${sec.id}`}
-                                          name="type"
-                                          className="flex h-9 w-full rounded-md border border-input bg-input/20 px-3 py-1 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
-                                          defaultValue="page"
-                                        >
-                                          <option value="page">Text page</option>
-                                          <option value="link">External link</option>
-                                          <option value="markdown">Markdown document</option>
-                                        </select>
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`content-${sec.id}`}>Content (text, URL, or Markdown)</Label>
-                                        <Textarea id={`content-${sec.id}`} name="content" rows={8} required />
-                                      </div>
-                                      <Button type="submit" size="sm">Add content item</Button>
-                                    </form>
+                                  <div className="space-y-1">
+                                    <details className="group rounded border border-border/40 bg-background/40">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                        + Add content item
+                                      </summary>
+                                      <form
+                                        action={createContentItemAction}
+                                        className="space-y-2 border-t border-border/40 p-3"
+                                      >
+                                        <input type="hidden" name="sectionId" value={sec.id} />
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`title-${sec.id}`}>Item title</Label>
+                                          <Input id={`title-${sec.id}`} name="title" required />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`type-${sec.id}`}>Type</Label>
+                                          <select
+                                            id={`type-${sec.id}`}
+                                            name="type"
+                                            className="flex h-9 w-full rounded-md border border-input bg-input/20 px-3 py-1 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                                            defaultValue="page"
+                                          >
+                                            <option value="page">Text page</option>
+                                            <option value="link">External link</option>
+                                            <option value="markdown">Markdown document</option>
+                                          </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`content-${sec.id}`}>Content (text, URL, or Markdown)</Label>
+                                          <Textarea id={`content-${sec.id}`} name="content" rows={8} required />
+                                        </div>
+                                        <Button type="submit" size="sm">Add content item</Button>
+                                      </form>
+                                    </details>
 
-                                    <form
-                                      action={uploadPdfContentItemAction}
-                                      encType="multipart/form-data"
-                                      className="space-y-2 rounded border border-border/40 bg-background/40 p-3"
-                                    >
-                                      <p className="text-xs font-medium text-foreground">Upload PDF</p>
-                                      <input type="hidden" name="sectionId" value={sec.id} />
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`pdf-title-${sec.id}`}>PDF title</Label>
-                                        <Input id={`pdf-title-${sec.id}`} name="title" required />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`pdf-file-${sec.id}`}>File</Label>
-                                        <Input
-                                          id={`pdf-file-${sec.id}`}
-                                          name="file"
-                                          type="file"
-                                          accept="application/pdf"
-                                          required
-                                        />
-                                      </div>
-                                      <Button type="submit" size="sm">Upload PDF</Button>
-                                    </form>
+                                    <details className="group rounded border border-border/40 bg-background/40">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                        + Upload PDF
+                                      </summary>
+                                      <form
+                                        action={uploadPdfContentItemAction}
+                                        encType="multipart/form-data"
+                                        className="space-y-2 border-t border-border/40 p-3"
+                                      >
+                                        <input type="hidden" name="sectionId" value={sec.id} />
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`pdf-title-${sec.id}`}>PDF title</Label>
+                                          <Input id={`pdf-title-${sec.id}`} name="title" required />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`pdf-file-${sec.id}`}>File</Label>
+                                          <Input
+                                            id={`pdf-file-${sec.id}`}
+                                            name="file"
+                                            type="file"
+                                            accept="application/pdf"
+                                            required
+                                          />
+                                        </div>
+                                        <Button type="submit" size="sm">Upload PDF</Button>
+                                      </form>
+                                    </details>
                                   </div>
                                 )}
                               </div>
@@ -411,17 +419,21 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                       )}
 
                       {canEdit && (
-                        <form
-                          action={createSectionAction}
-                          className="space-y-2 rounded-md border border-border/60 bg-muted/30 p-3"
-                        >
-                          <p className="text-xs font-medium text-foreground">Add section</p>
-                          <input type="hidden" name="moduleId" value={mod.id} />
-                          <div className="flex gap-2">
-                            <Input name="title" placeholder="Section title" required className="h-8 text-sm" />
-                            <Button type="submit" size="sm">Add</Button>
-                          </div>
-                        </form>
+                        <details className="rounded-md border border-border/60 bg-muted/30">
+                          <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                            + Add section
+                          </summary>
+                          <form
+                            action={createSectionAction}
+                            className="border-t border-border/60 p-3"
+                          >
+                            <input type="hidden" name="moduleId" value={mod.id} />
+                            <div className="flex gap-2">
+                              <Input name="title" placeholder="Section title" required className="h-8 text-sm" />
+                              <Button type="submit" size="sm">Add</Button>
+                            </div>
+                          </form>
+                        </details>
                       )}
                     </CardContent>
                   </Card>
