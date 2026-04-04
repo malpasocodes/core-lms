@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -72,11 +73,19 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-foreground/80">
             {user?.role === "instructor" ? (
-              <CourseList
-                heading="Owned courses"
-                emptyText="No courses yet. Create one to get started."
-                courses={ownedCourses}
-              />
+              <div className="space-y-4">
+                <CourseList
+                  heading="Owned courses"
+                  emptyText="No courses yet. Create one to get started."
+                  courses={ownedCourses}
+                />
+                <Link
+                  href="/instructor/enroll"
+                  className="text-sm font-semibold text-foreground underline"
+                >
+                  Manage Enrollments →
+                </Link>
+              </div>
             ) : (
               <CourseList
                 heading="Enrolled courses"
