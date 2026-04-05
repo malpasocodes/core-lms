@@ -281,6 +281,43 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
           )
         ) : null}
 
+        {/* Instructor / admin question preview */}
+        {(isAdmin || isOwner) && isMcq && questions.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">
+              Questions ({questions.length})
+            </p>
+            <div className="space-y-4">
+              {questions.map((q, i) => {
+                const opts: string[] = JSON.parse(q.options);
+                return (
+                  <div key={q.id} className="rounded-lg border border-border/60 bg-background/80 px-4 py-3 space-y-2">
+                    <p className="text-sm font-medium text-foreground">
+                      {i + 1}. {q.questionText}
+                    </p>
+                    <div className="space-y-1 pl-1">
+                      {opts.map((opt, j) => (
+                        <p
+                          key={j}
+                          className={`text-sm ${j === q.correctIndex ? "text-green-600 dark:text-green-400 font-medium" : "text-muted-foreground"}`}
+                        >
+                          {j === q.correctIndex ? "✓ " : "○ "}
+                          {opt}
+                        </p>
+                      ))}
+                    </div>
+                    {q.explanation ? (
+                      <p className="text-xs text-muted-foreground pt-1 border-t border-border/40">
+                        {q.explanation}
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         {/* Instructor / admin submissions list */}
         {isAdmin || isOwner ? (
           <div className="space-y-2">
