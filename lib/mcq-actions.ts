@@ -62,7 +62,7 @@ export async function generateMcqFromPdfAction(formData: FormData) {
     const buffer = await resp.arrayBuffer();
     pdfBase64 = Buffer.from(buffer).toString("base64");
   } catch {
-    redirect(`/courses/${item.courseId}/items/${contentItemId}?error=Failed%20to%20fetch%20PDF`);
+    redirect(`/courses/${item.courseId}/activities/${contentItemId}?error=Failed%20to%20fetch%20PDF`);
   }
 
   // Call Claude API with native PDF support
@@ -108,7 +108,7 @@ Focus on key concepts, definitions, and important facts. Make distractors plausi
     if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid response shape");
     questions = parsed;
   } catch {
-    redirect(`/courses/${item.courseId}/items/${contentItemId}?error=AI%20generation%20failed`);
+    redirect(`/courses/${item.courseId}/activities/${contentItemId}?error=AI%20generation%20failed`);
   }
 
   // Create the assignment and questions

@@ -17,7 +17,14 @@ import {
   submissions,
 } from "@/lib/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { createContentItemAction, createModuleAction, createSectionAction, uploadPdfContentItemAction } from "@/lib/module-actions";
+import {
+  createModuleAction,
+  createSectionAction,
+  createWatchActivityAction,
+  uploadListenActivityAction,
+  createReadActivityAction,
+  createWriteActivityAction,
+} from "@/lib/module-actions";
 import { createAssignmentAction } from "@/lib/assignment-actions";
 import { CourseTabs } from "./_components/course-tabs";
 
@@ -229,7 +236,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                       <li key={mod.id} className="flex justify-between">
                         <span className="text-foreground">{mod.title}</span>
                         <span className="text-muted-foreground">
-                          {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {itemCount} items
+                          {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {itemCount} {itemCount === 1 ? "activity" : "activities"}
                         </span>
                       </li>
                     );
@@ -326,7 +333,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                       >
                                         <a
                                           className="text-foreground underline"
-                                          href={`/courses/${courseId}/items/${item.id}`}
+                                          href={`/courses/${courseId}/activities/${item.id}`}
                                         >
                                           {item.title}
                                         </a>
@@ -344,70 +351,126 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                     ))}
                                   </ul>
                                 ) : (
-                                  <p className="text-xs text-muted-foreground">No content items yet.</p>
+                                  <p className="text-xs text-muted-foreground">No activities yet.</p>
                                 )}
 
                                 {canEdit && (
                                   <div className="space-y-1">
+                                    {/* Watch */}
                                     <details className="group rounded border border-border/40 bg-background/40">
                                       <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
-                                        + Add content item
+                                        + Watch — YouTube video
                                       </summary>
                                       <form
-                                        action={createContentItemAction}
+                                        action={createWatchActivityAction}
                                         className="space-y-2 border-t border-border/40 p-3"
                                       >
                                         <input type="hidden" name="sectionId" value={sec.id} />
                                         <div className="space-y-1">
-                                          <Label htmlFor={`title-${sec.id}`}>Item title</Label>
-                                          <Input id={`title-${sec.id}`} name="title" required />
+                                          <Label htmlFor={`watch-title-${sec.id}`}>Title</Label>
+                                          <Input id={`watch-title-${sec.id}`} name="title" required />
                                         </div>
                                         <div className="space-y-1">
-                                          <Label htmlFor={`type-${sec.id}`}>Type</Label>
-                                          <select
-                                            id={`type-${sec.id}`}
-                                            name="type"
-                                            className="flex h-9 w-full rounded-md border border-input bg-input/20 px-3 py-1 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
-                                            defaultValue="page"
-                                          >
-                                            <option value="page">Text page</option>
-                                            <option value="link">External link</option>
-                                            <option value="markdown">Markdown document</option>
-                                          </select>
+                                          <Label htmlFor={`watch-url-${sec.id}`}>YouTube URL</Label>
+                                          <Input
+                                            id={`watch-url-${sec.id}`}
+                                            name="youtubeUrl"
+                                            type="url"
+                                            placeholder="https://www.youtube.com/watch?v=..."
+                                            required
+                                          />
                                         </div>
-                                        <div className="space-y-1">
-                                          <Label htmlFor={`content-${sec.id}`}>Content (text, URL, or Markdown)</Label>
-                                          <Textarea id={`content-${sec.id}`} name="content" rows={8} required />
-                                        </div>
-                                        <Button type="submit" size="sm">Add content item</Button>
+                                        <Button type="submit" size="sm">Add Watch activity</Button>
                                       </form>
                                     </details>
 
+                                    {/* Listen */}
                                     <details className="group rounded border border-border/40 bg-background/40">
                                       <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
-                                        + Upload PDF
+                                        + Listen — audio file
                                       </summary>
                                       <form
-                                        action={uploadPdfContentItemAction}
+                                        action={uploadListenActivityAction}
                                         encType="multipart/form-data"
                                         className="space-y-2 border-t border-border/40 p-3"
                                       >
                                         <input type="hidden" name="sectionId" value={sec.id} />
                                         <div className="space-y-1">
-                                          <Label htmlFor={`pdf-title-${sec.id}`}>PDF title</Label>
-                                          <Input id={`pdf-title-${sec.id}`} name="title" required />
+                                          <Label htmlFor={`listen-title-${sec.id}`}>Title</Label>
+                                          <Input id={`listen-title-${sec.id}`} name="title" required />
                                         </div>
                                         <div className="space-y-1">
-                                          <Label htmlFor={`pdf-file-${sec.id}`}>File</Label>
+                                          <Label htmlFor={`listen-file-${sec.id}`}>Audio file (MP3, M4A, WAV, OGG — max 100 MB)</Label>
                                           <Input
-                                            id={`pdf-file-${sec.id}`}
+                                            id={`listen-file-${sec.id}`}
                                             name="file"
                                             type="file"
-                                            accept="application/pdf"
+                                            accept="audio/*"
                                             required
                                           />
                                         </div>
-                                        <Button type="submit" size="sm">Upload PDF</Button>
+                                        <Button type="submit" size="sm">Upload Listen activity</Button>
+                                      </form>
+                                    </details>
+
+                                    {/* Read */}
+                                    <details className="group rounded border border-border/40 bg-background/40">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                        + Read — PDF or Markdown
+                                      </summary>
+                                      <form
+                                        action={createReadActivityAction}
+                                        encType="multipart/form-data"
+                                        className="space-y-2 border-t border-border/40 p-3"
+                                      >
+                                        <input type="hidden" name="sectionId" value={sec.id} />
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`read-title-${sec.id}`}>Title</Label>
+                                          <Input id={`read-title-${sec.id}`} name="title" required />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`read-file-${sec.id}`}>File (.pdf or .md — max 20 MB)</Label>
+                                          <Input
+                                            id={`read-file-${sec.id}`}
+                                            name="file"
+                                            type="file"
+                                            accept=".pdf,.md,.markdown,application/pdf,text/markdown"
+                                            required
+                                          />
+                                        </div>
+                                        <Button type="submit" size="sm">Upload Read activity</Button>
+                                      </form>
+                                    </details>
+
+                                    {/* Write */}
+                                    <details className="group rounded border border-border/40 bg-background/40">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                        + Write — writing prompt
+                                      </summary>
+                                      <form
+                                        action={createWriteActivityAction}
+                                        className="space-y-2 border-t border-border/40 p-3"
+                                      >
+                                        <input type="hidden" name="sectionId" value={sec.id} />
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`write-title-${sec.id}`}>Title</Label>
+                                          <Input id={`write-title-${sec.id}`} name="title" required />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`write-prompt-${sec.id}`}>Prompt</Label>
+                                          <Textarea id={`write-prompt-${sec.id}`} name="prompt" rows={4} required />
+                                        </div>
+                                        <div className="flex gap-3">
+                                          <div className="flex-1 space-y-1">
+                                            <Label htmlFor={`write-min-${sec.id}`}>Min characters (optional)</Label>
+                                            <Input id={`write-min-${sec.id}`} name="minChars" type="number" min="0" placeholder="e.g. 100" />
+                                          </div>
+                                          <div className="flex-1 space-y-1">
+                                            <Label htmlFor={`write-max-${sec.id}`}>Max characters (optional)</Label>
+                                            <Input id={`write-max-${sec.id}`} name="maxChars" type="number" min="0" placeholder="e.g. 2000" />
+                                          </div>
+                                        </div>
+                                        <Button type="submit" size="sm">Add Write activity</Button>
                                       </form>
                                     </details>
                                   </div>

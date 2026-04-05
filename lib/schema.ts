@@ -72,7 +72,7 @@ export const sections = pgTable("sections", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const contentTypeEnum = pgEnum("content_type", ["page", "link", "normalized_text", "pdf", "markdown"]);
+export const contentTypeEnum = pgEnum("content_type", ["page", "link", "normalized_text", "pdf", "markdown", "watch", "listen", "read", "write"]);
 
 export const contentItems = pgTable("content_items", {
   id: text("id").primaryKey(),
@@ -102,6 +102,7 @@ export const assignments = pgTable("assignments", {
   description: text("description"),
   type: text("type").$type<"open_ended" | "mcq">().notNull().default("open_ended"),
   sourceContentItemId: text("source_content_item_id").references(() => contentItems.id, { onDelete: "set null" }),
+  linkedActivityId: text("linked_activity_id").references(() => contentItems.id, { onDelete: "set null" }),
   mcqModel: text("mcq_model"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

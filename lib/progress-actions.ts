@@ -60,5 +60,5 @@ export async function markContentCompleteAction(formData: FormData) {
     })
     .onConflictDoNothing();
 
-  redirect(`/courses/${item.courseId}/items/${item.itemId}?notice=Completed`);
+  redirect(`/courses/${item.courseId}/activities/${item.itemId}?notice=Completed`);
 }

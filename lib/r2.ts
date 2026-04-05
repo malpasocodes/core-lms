@@ -20,3 +20,15 @@ export async function uploadPdfToR2(buffer: Buffer, key: string): Promise<string
   );
   return `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${key}`;
 }
+
+export async function uploadFileToR2(buffer: Buffer, key: string, contentType: string): Promise<string> {
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+    })
+  );
+  return `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${key}`;
+}
