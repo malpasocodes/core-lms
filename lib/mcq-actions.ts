@@ -122,6 +122,7 @@ Focus on key concepts, definitions, and important facts. Make distractors plausi
     description: `Auto-generated MCQ quiz from "${item.itemTitle}". ${questions.length} questions.`,
     type: "mcq",
     sourceContentItemId: contentItemId,
+    mcqModel: model,
   });
 
   await db.insert(mcqQuestions).values(

@@ -102,6 +102,7 @@ export const assignments = pgTable("assignments", {
   description: text("description"),
   type: text("type").$type<"open_ended" | "mcq">().notNull().default("open_ended"),
   sourceContentItemId: text("source_content_item_id").references(() => contentItems.id, { onDelete: "set null" }),
+  mcqModel: text("mcq_model"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
