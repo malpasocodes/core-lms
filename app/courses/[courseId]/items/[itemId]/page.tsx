@@ -15,6 +15,8 @@ import { contentItems, courses, modules, sections } from "@/lib/schema";
 import { markContentCompleteAction } from "@/lib/progress-actions";
 import { NormalizedContentRenderer } from "@/components/normalized-content-renderer";
 import { MarkdownItemEditor } from "@/components/markdown-item-editor";
+import { GenerateMcqButton } from "@/components/generate-mcq-button";
+import { generateMcqFromPdfAction } from "@/lib/mcq-actions";
 
 type ItemPageProps = {
   params: Promise<{ courseId: string; itemId: string }>;
@@ -138,6 +140,33 @@ export default async function CourseItemPage(props: ItemPageProps) {
             >
               Open PDF in new tab
             </a>
+            {(isOwner || isAdmin) && (
+              <div className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3">
+                <p className="text-sm font-semibold text-foreground">Generate MCQ Quiz</p>
+                <p className="text-xs text-muted-foreground">
+                  Use AI to generate multiple-choice questions from this PDF. A new quiz assignment
+                  will be created in the same section.
+                </p>
+                <form action={generateMcqFromPdfAction} className="flex items-center gap-3">
+                  <input type="hidden" name="contentItemId" value={itemId} />
+                  <label className="text-xs text-muted-foreground" htmlFor="num-questions">
+                    Questions:
+                  </label>
+                  <select
+                    id="num-questions"
+                    name="numQuestions"
+                    defaultValue="10"
+                    className="flex h-7 w-20 rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                  </select>
+                  <GenerateMcqButton />
+                </form>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-2">

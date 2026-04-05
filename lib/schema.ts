@@ -100,6 +100,8 @@ export const assignments = pgTable("assignments", {
   sectionId: text("section_id").references(() => sections.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   description: text("description"),
+  type: text("type").$type<"open_ended" | "mcq">().notNull().default("open_ended"),
+  sourceContentItemId: text("source_content_item_id").references(() => contentItems.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -115,6 +117,7 @@ export const submissions = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     submissionText: text("submission_text"),
     fileUrl: text("file_url"),
+    mcqAnswers: text("mcq_answers"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
@@ -152,7 +155,6 @@ export const grades = pgTable(
       .references(() => submissions.id, { onDelete: "cascade" }),
     score: integer("score").notNull(),
     gradedBy: text("graded_by")
-      .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     gradedAt: timestamp("graded_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -162,3 +164,18 @@ export const grades = pgTable(
 );
 
 export type Grade = typeof grades.$inferSelect;
+
+export const mcqQuestions = pgTable("mcq_questions", {
+  id: text("id").primaryKey(),
+  assignmentId: text("assignment_id")
+    .notNull()
+    .references(() => assignments.id, { onDelete: "cascade" }),
+  order: integer("order").notNull(),
+  questionText: text("question_text").notNull(),
+  options: text("options").notNull(),
+  correctIndex: integer("correct_index").notNull(),
+  explanation: text("explanation"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type McqQuestion = typeof mcqQuestions.$inferSelect;
