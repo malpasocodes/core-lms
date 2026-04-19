@@ -11,8 +11,7 @@ import { getDb } from "@/lib/db";
 import { courses } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
-import { CourseForm } from "@/app/dashboard/_components/course-form";
-import { updateCourseAction } from "@/lib/course-actions";
+import { createCourseAction, updateCourseAction } from "@/lib/course-actions";
 import { DeleteCourseForm } from "./_components/delete-course-form";
 
 export default async function CoursesPage() {
@@ -91,7 +90,35 @@ export default async function CoursesPage() {
               <CardDescription>Assign to an instructor on creation.</CardDescription>
             </CardHeader>
             <CardContent>
-              <CourseForm instructors={instructors} />
+              <form action={createCourseAction} className="space-y-3 text-sm">
+                  <div className="space-y-1">
+                    <Label htmlFor="create-title">Title</Label>
+                    <Input id="create-title" name="title" required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="create-description">Description</Label>
+                    <Textarea id="create-description" name="description" rows={3} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="create-instructor">Assign instructor</Label>
+                    <select
+                      id="create-instructor"
+                      name="instructorId"
+                      required
+                      className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                    >
+                      <option value="">Select instructor</option>
+                      {instructors.map((inst) => (
+                        <option key={inst.id} value={inst.id}>{inst.email}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Checkbox id="create-published" name="published" />
+                    <Label htmlFor="create-published" className="text-sm font-normal">Mark as published</Label>
+                  </div>
+                  <Button type="submit" className="w-full">Create course</Button>
+                </form>
             </CardContent>
           </Card>
 

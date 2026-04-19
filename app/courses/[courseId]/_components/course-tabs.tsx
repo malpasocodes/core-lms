@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type CourseTabsProps = {
@@ -17,21 +17,23 @@ const tabs = [
 
 export function CourseTabs({ courseId, canEdit }: CourseTabsProps) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const activeTab = searchParams.get("tab") || "overview";
+  const isGradebook = pathname.endsWith("/gradebook");
 
   const allTabs = canEdit
     ? [...tabs, { key: "create-module", label: "Create Module" }]
     : tabs;
 
   return (
-    <div className="flex gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+    <div className="flex flex-wrap gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
       {allTabs.map((tab) => (
         <Link
           key={tab.key}
           href={`/courses/${courseId}?tab=${tab.key}`}
           className={cn(
             "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-            activeTab === tab.key
+            !isGradebook && activeTab === tab.key
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
@@ -39,6 +41,19 @@ export function CourseTabs({ courseId, canEdit }: CourseTabsProps) {
           {tab.label}
         </Link>
       ))}
+      {canEdit && (
+        <Link
+          href={`/courses/${courseId}/gradebook`}
+          className={cn(
+            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            isGradebook
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Gradebook
+        </Link>
+      )}
     </div>
   );
 }
