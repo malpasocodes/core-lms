@@ -135,6 +135,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
       title: assignments.title,
       description: assignments.description,
       sectionId: assignments.sectionId,
+      dueAt: assignments.dueAt,
       createdAt: assignments.createdAt,
     })
     .from(assignments)
@@ -538,6 +539,12 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                             Section: {sectionTitleById[assignment.sectionId] ?? ""}
                           </p>
                         )}
+                        {assignment.dueAt && (
+                          <p className={`text-[11px] font-medium ${assignment.dueAt < new Date() ? "text-red-600" : "text-muted-foreground"}`}>
+                            Due: {assignment.dueAt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            {assignment.dueAt < new Date() ? " — Overdue" : ""}
+                          </p>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {user.role === "learner" && (
@@ -587,6 +594,10 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                   <div className="space-y-1">
                     <Label htmlFor="assignment-description">Description / prompt</Label>
                     <Textarea id="assignment-description" name="description" rows={3} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="assignment-due">Due date (optional)</Label>
+                    <Input id="assignment-due" name="dueAt" type="datetime-local" />
                   </div>
                   <Button type="submit">Create assignment</Button>
                 </form>

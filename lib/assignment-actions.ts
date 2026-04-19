@@ -16,6 +16,8 @@ export async function createAssignmentAction(formData: FormData) {
   const sectionId = (formData.get("sectionId") as string | null)?.trim() || null;
   const title = (formData.get("title") as string | null)?.trim();
   const description = ((formData.get("description") as string | null) || "").trim();
+  const dueAtRaw = (formData.get("dueAt") as string | null)?.trim() || null;
+  const dueAt = dueAtRaw ? new Date(dueAtRaw) : null;
 
   if (!courseId || !title) {
     redirect("/dashboard?error=Missing%20course%20or%20title");
@@ -43,6 +45,7 @@ export async function createAssignmentAction(formData: FormData) {
     sectionId,
     title,
     description,
+    dueAt,
   });
 
   redirect(`/courses/${courseId}?notice=Assignment%20created`);

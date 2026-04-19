@@ -104,6 +104,7 @@ export const assignments = pgTable("assignments", {
   sourceContentItemId: text("source_content_item_id").references(() => contentItems.id, { onDelete: "set null" }),
   linkedActivityId: text("linked_activity_id").references(() => contentItems.id, { onDelete: "set null" }),
   mcqModel: text("mcq_model"),
+  dueAt: timestamp("due_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

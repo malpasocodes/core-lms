@@ -33,6 +33,7 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
       description: assignments.description,
       type: assignments.type,
       mcqModel: assignments.mcqModel,
+      dueAt: assignments.dueAt,
       courseId: courses.id,
       courseTitle: courses.title,
       instructorId: courses.instructorId,
@@ -121,6 +122,15 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
             {assignment.courseTitle}
           </Link>
         </p>
+        {assignment.dueAt && (() => {
+          const overdue = assignment.dueAt! < new Date();
+          return (
+            <p className={`text-sm font-medium ${overdue ? "text-red-600" : "text-muted-foreground"}`}>
+              Due: {assignment.dueAt!.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              {overdue ? " — Overdue" : ""}
+            </p>
+          );
+        })()}
       </div>
 
       <div className="space-y-4 rounded-2xl border border-border/70 bg-card/80 p-4">
