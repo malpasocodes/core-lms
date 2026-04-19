@@ -10,6 +10,19 @@ async function main() {
   }
 
   const sql = neon(url);
+
+  // Create tracking table if it doesn't exist
+  await sql(
+    `CREATE TABLE IF NOT EXISTS _migrations (
+      name text PRIMARY KEY,
+      applied_at timestamptz DEFAULT now() NOT NULL
+    )`
+  );
+
+  // Fetch already-applied migrations
+  const rows = await sql(`SELECT name FROM _migrations`);
+  const applied = new Set(rows.map((r) => (r as { name: string }).name));
+
   const migrationsDir = path.join(process.cwd(), "drizzle");
   const files = fs
     .readdirSync(migrationsDir)
@@ -17,6 +30,12 @@ async function main() {
     .sort();
 
   for (const file of files) {
+    if (applied.has(file)) {
+      // eslint-disable-next-line no-console
+      console.log(`Skipping ${file} (already applied)`);
+      continue;
+    }
+
     const fullPath = path.join(migrationsDir, file);
     const raw = fs.readFileSync(fullPath, "utf8");
     const statements = raw
@@ -29,10 +48,12 @@ async function main() {
     for (const stmt of statements) {
       await sql(stmt);
     }
+
+    await sql(`INSERT INTO _migrations (name) VALUES ('${file}')`);
   }
 
   // eslint-disable-next-line no-console
-  console.log("Migrations applied");
+  console.log("Migrations complete");
 }
 
 main().catch((err) => {

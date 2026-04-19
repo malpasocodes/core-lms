@@ -182,3 +182,17 @@ export const mcqQuestions = pgTable("mcq_questions", {
 });
 
 export type McqQuestion = typeof mcqQuestions.$inferSelect;
+
+export const announcements = pgTable("announcements", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type Announcement = typeof announcements.$inferSelect;

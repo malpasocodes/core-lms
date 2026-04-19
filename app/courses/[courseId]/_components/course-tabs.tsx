@@ -13,6 +13,7 @@ const tabs = [
   { key: "overview", label: "Overview" },
   { key: "modules", label: "Modules" },
   { key: "assignments", label: "Assignments" },
+  { key: "announcements", label: "Announcements" },
 ];
 
 export function CourseTabs({ courseId, canEdit }: CourseTabsProps) {

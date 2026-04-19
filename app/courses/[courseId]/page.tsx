@@ -15,8 +15,10 @@ import {
   completions,
   assignments,
   submissions,
+  announcements,
+  users,
 } from "@/lib/schema";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   createModuleAction,
   createSectionAction,
@@ -26,6 +28,7 @@ import {
   createWriteActivityAction,
 } from "@/lib/module-actions";
 import { createAssignmentAction } from "@/lib/assignment-actions";
+import { createAnnouncementAction, deleteAnnouncementAction } from "@/lib/announcement-actions";
 import { CourseTabs } from "./_components/course-tabs";
 
 type CoursePageProps = {
@@ -196,6 +199,19 @@ export default async function CourseDetailPage(props: CoursePageProps) {
 
   // Build a lookup from sectionId → section title for assignment display
   const sectionTitleById = Object.fromEntries(sectionRows.map((s) => [s.id, s.title]));
+
+  // Announcements (newest first, with author email)
+  const announcementRows = await db
+    .select({
+      id: announcements.id,
+      body: announcements.body,
+      createdAt: announcements.createdAt,
+      authorEmail: users.email,
+    })
+    .from(announcements)
+    .leftJoin(users, eq(announcements.authorId, users.id))
+    .where(eq(announcements.courseId, courseId))
+    .orderBy(desc(announcements.createdAt));
 
   // Learner progress totals
   const courseItemTotal = itemRows.length;
@@ -706,6 +722,67 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                 </ul>
               </CardContent>
             </Card>
+          )}
+        </div>
+      )}
+
+      {tab === "announcements" && (
+        <div className="space-y-4">
+          {/* Feed */}
+          {announcementRows.length === 0 ? (
+            <p className="text-sm text-slate-400">No announcements yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {announcementRows.map((a) => (
+                <div
+                  key={a.id}
+                  className="rounded-lg border border-slate-200 bg-white p-4 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="text-sm text-slate-800 whitespace-pre-wrap flex-1">{a.body}</p>
+                    {canEdit && (
+                      <form action={deleteAnnouncementAction}>
+                        <input type="hidden" name="courseId" value={courseId} />
+                        <input type="hidden" name="announcementId" value={a.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-slate-400 hover:text-red-600 transition-colors shrink-0"
+                        >
+                          Delete
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {a.authorEmail} ·{" "}
+                    {a.createdAt.toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Compose form — instructor / admin only */}
+          {canEdit && (
+            <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-slate-700">Post announcement</h2>
+              <form action={createAnnouncementAction} className="space-y-3">
+                <input type="hidden" name="courseId" value={courseId} />
+                <Textarea
+                  name="body"
+                  rows={3}
+                  placeholder="Write a message to all enrolled learners…"
+                  required
+                />
+                <Button type="submit" size="sm">Post</Button>
+              </form>
+            </div>
           )}
         </div>
       )}
