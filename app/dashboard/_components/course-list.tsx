@@ -9,20 +9,25 @@ type CourseListProps = {
 export function CourseList({ heading, emptyText, courses }: CourseListProps) {
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-foreground">{heading}</h3>
+      {heading && (
+        <h3 className="text-sm font-semibold text-slate-700">{heading}</h3>
+      )}
       {courses.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{emptyText}</p>
+        <p className="text-sm text-slate-400">{emptyText}</p>
       ) : (
-        <div className="divide-y divide-border overflow-hidden rounded-lg border border-border/70 bg-card/70 text-sm">
+        <div className="divide-y divide-slate-100 rounded-md border border-slate-200">
           {courses.map((course) => (
-            <div key={course.id} className="flex items-center justify-between px-4 py-3">
-              <div className="space-y-1">
-                <Link className="font-medium text-foreground underline" href={`/courses/${course.id}`}>
-                  {course.title}
-                </Link>
-                <p className="text-xs text-muted-foreground">{course.id}</p>
-              </div>
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
+            <div
+              key={course.id}
+              className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors"
+            >
+              <Link
+                className="text-sm font-medium text-slate-800 hover:text-teal-700"
+                href={`/courses/${course.id}`}
+              >
+                {course.title}
+              </Link>
+              <span className="text-xs text-slate-400 uppercase tracking-wide">
                 {course.published === "true" ? "Published" : "Draft"}
               </span>
             </div>

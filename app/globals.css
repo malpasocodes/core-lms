@@ -11,6 +11,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  /* Teal accent ramp */
+  --color-teal-50: var(--teal-50);
+  --color-teal-100: var(--teal-100);
+  --color-teal-200: var(--teal-200);
+  --color-teal-300: var(--teal-300);
+  --color-teal-400: var(--teal-400);
+  --color-teal-500: var(--teal-500);
+  --color-teal-600: var(--teal-600);
+  --color-teal-700: var(--teal-700);
+  --color-teal-800: var(--teal-800);
+  --color-teal-900: var(--teal-900);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -50,6 +61,18 @@
 }
 
 :root {
+  /* Teal accent ramp */
+  --teal-50:  oklch(0.970 0.025 196);
+  --teal-100: oklch(0.940 0.050 196);
+  --teal-200: oklch(0.890 0.080 196);
+  --teal-300: oklch(0.820 0.110 196);
+  --teal-400: oklch(0.730 0.135 196);
+  --teal-500: oklch(0.620 0.155 196);
+  --teal-600: oklch(0.530 0.145 196);
+  --teal-700: oklch(0.450 0.120 196);
+  --teal-800: oklch(0.360 0.090 196);
+  --teal-900: oklch(0.270 0.060 196);
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

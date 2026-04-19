@@ -36,7 +36,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
         active
-          ? "bg-slate-100 text-slate-900 font-medium"
+          ? "bg-teal-50 text-teal-700 font-medium"
           : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
       )}
     >
