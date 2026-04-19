@@ -197,6 +197,21 @@ export default async function CourseDetailPage(props: CoursePageProps) {
   // Build a lookup from sectionId → section title for assignment display
   const sectionTitleById = Object.fromEntries(sectionRows.map((s) => [s.id, s.title]));
 
+  // Learner progress totals
+  const courseItemTotal = itemRows.length;
+  const courseItemCompleted = user.role === "learner" ? learnerCompletionSet.size : 0;
+
+  // Per-module progress for learners
+  const moduleProgressMap = new Map(
+    moduleRows.map((mod) => {
+      const modItems = (sectionsByModule[mod.id] ?? []).flatMap((s) => itemsBySection[s.id] ?? []);
+      const completed = user.role === "learner"
+        ? modItems.filter((item) => learnerCompletionSet.has(item.id)).length
+        : 0;
+      return [mod.id, { total: modItems.length, completed }];
+    })
+  );
+
   return (
     <div className="space-y-6">
       <div className="space-y-4">
@@ -209,6 +224,20 @@ export default async function CourseDetailPage(props: CoursePageProps) {
             {course.description || "No description provided."}
           </p>
         </div>
+        {user.role === "learner" && courseItemTotal > 0 && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>Your progress</span>
+              <span className="tabular-nums">{courseItemCompleted} / {courseItemTotal} activities</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-teal-500 transition-all"
+                style={{ width: `${Math.round((courseItemCompleted / courseItemTotal) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
         <Suspense fallback={<div className="h-9" />}>
           <CourseTabs courseId={courseId} canEdit={canEdit} />
         </Suspense>
@@ -225,7 +254,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
               {moduleRows.length === 0 ? (
                 <p>No modules yet.</p>
               ) : (
-                <ul className="space-y-1">
+                <ul className="space-y-3">
                   {moduleRows.map((mod) => {
                     const modSections = sectionsByModule[mod.id] || [];
                     const sectionCount = modSections.length;
@@ -233,12 +262,28 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                       (sum, s) => sum + (itemsBySection[s.id]?.length ?? 0),
                       0
                     );
+                    const prog = moduleProgressMap.get(mod.id);
                     return (
-                      <li key={mod.id} className="flex justify-between">
-                        <span className="text-foreground">{mod.title}</span>
-                        <span className="text-muted-foreground">
-                          {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {itemCount} {itemCount === 1 ? "activity" : "activities"}
-                        </span>
+                      <li key={mod.id} className="space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-foreground">{mod.title}</span>
+                          <span className="text-muted-foreground">
+                            {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {itemCount} {itemCount === 1 ? "activity" : "activities"}
+                          </span>
+                        </div>
+                        {user.role === "learner" && prog && prog.total > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-teal-500"
+                                style={{ width: `${Math.round((prog.completed / prog.total) * 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-[11px] text-slate-400 tabular-nums">
+                              {prog.completed}/{prog.total}
+                            </span>
+                          </div>
+                        )}
                       </li>
                     );
                   })}
@@ -291,13 +336,27 @@ export default async function CourseDetailPage(props: CoursePageProps) {
             <div className="space-y-4">
               {moduleRows.map((mod) => {
                 const modSections = sectionsByModule[mod.id] || [];
+                const prog = moduleProgressMap.get(mod.id);
                 return (
                   <Card key={mod.id}>
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1 space-y-1.5">
                           <CardTitle className="text-base">{mod.title}</CardTitle>
                           <CardDescription>Order: {mod.order}</CardDescription>
+                          {user.role === "learner" && prog && prog.total > 0 && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-teal-500 transition-all"
+                                  style={{ width: `${Math.round((prog.completed / prog.total) * 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-[11px] text-slate-400 tabular-nums">
+                                {prog.completed}/{prog.total}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
