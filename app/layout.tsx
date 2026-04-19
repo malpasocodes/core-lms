@@ -1,22 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 import "./globals.css";
-import { PrimaryNav } from "@/components/layout/primary-nav";
+import { SidebarNav } from "@/components/layout/sidebar-nav";
 import type { Role } from "@/lib/auth";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "CoreLMS Demonstration",
@@ -31,7 +18,6 @@ export default async function RootLayout({
 }>) {
   const clerkUser = await currentUser();
 
-  // Extract role from Clerk's publicMetadata
   const user = clerkUser
     ? {
         email: clerkUser.primaryEmailAddress?.emailAddress ?? "",
@@ -41,27 +27,17 @@ export default async function RootLayout({
 
   return (
     <ClerkProvider>
-      <html lang="en" className={inter.variable}>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-        >
-          <div className="min-h-screen bg-background">
-            <header className="relative border-b border-border bg-card/80 backdrop-blur-sm">
-              <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-                <div className="flex items-center gap-2 text-foreground">
-                  <div className="text-lg font-semibold tracking-wide">
-                    CoreLMS
-                  </div>
-                  <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-                    v0.1
-                  </span>
+      <html lang="en">
+        <body className="antialiased bg-slate-50 text-slate-900">
+          <div className="flex min-h-screen">
+            <SidebarNav user={user} />
+            <div className="flex flex-1 flex-col min-w-0 lg:min-h-screen">
+              <main className="flex-1 px-8 py-8">
+                <div className="mx-auto max-w-5xl">
+                  {children}
                 </div>
-                <PrimaryNav user={user} />
-              </div>
-            </header>
-            <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-              {children}
-            </main>
+              </main>
+            </div>
           </div>
         </body>
       </html>

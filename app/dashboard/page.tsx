@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { checkDatabaseConnection, getDb } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { courses, enrollments } from "@/lib/schema";
 import { eq } from "drizzle-orm";
@@ -11,10 +11,7 @@ import { CourseForm } from "./_components/course-form";
 import { CourseList } from "./_components/course-list";
 
 export default async function DashboardPage() {
-  const [dbStatus, user] = await Promise.all([
-    checkDatabaseConnection(),
-    getCurrentUser(),
-  ]);
+  const user = await getCurrentUser();
 
   if (user?.role === "admin") {
     redirect("/admin");
