@@ -1,11 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, inArray, like } from "drizzle-orm";
 
-import { requireAdmin } from "@/lib/auth";
+import { getCurrentUser, requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { openstaxBooks, openstaxChapters, openstaxSections } from "@/lib/schema";
+import {
+  modules,
+  openstaxBooks,
+  openstaxChapters,
+  openstaxSections,
+  sections,
+} from "@/lib/schema";
 import { fetchBookToc, fetchSectionHtml } from "@/lib/openstax-client";
 
 export async function ingestOpenstaxBookAction(formData: FormData) {
@@ -88,4 +94,106 @@ export async function deleteOpenstaxBookAction(formData: FormData) {
   const db = await getDb();
   await db.delete(openstaxBooks).where(eq(openstaxBooks.id, bookId));
   redirect("/admin/openstax?notice=Book+removed");
+}
+
+export async function importOpenstaxBookToCourseAction(formData: FormData) {
+  const courseId = (formData.get("courseId") as string | null)?.trim();
+  const bookId = (formData.get("bookId") as string | null)?.trim();
+
+  if (!courseId || !bookId) {
+    redirect("/dashboard?error=Missing+course+or+book");
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+
+  const db = await getDb();
+  const course = await db.query.courses.findFirst({
+    columns: { id: true, instructorId: true },
+    where: (c, { eq }) => eq(c.id, courseId),
+  });
+  if (!course) redirect("/dashboard?error=Course+not+found");
+
+  const isOwner = user.role === "instructor" && user.id === course.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect(`/courses/${courseId}?error=Not+authorized`);
+  }
+
+  const book = await db.query.openstaxBooks.findFirst({
+    columns: { id: true, title: true },
+    where: (b, { eq }) => eq(b.id, bookId),
+  });
+  if (!book) redirect(`/courses/${courseId}?tab=import&error=Book+not+found`);
+
+  // Block re-import of the same book into the same course.
+  const alreadyImported = await db
+    .select({ id: modules.id })
+    .from(modules)
+    .where(
+      and(
+        eq(modules.courseId, courseId),
+        like(modules.sourceRef, `openstax:book:${bookId}:%`),
+      ),
+    )
+    .limit(1);
+  if (alreadyImported.length > 0) {
+    redirect(`/courses/${courseId}?tab=import&error=Book+already+imported`);
+  }
+
+  const bookChapters = await db
+    .select()
+    .from(openstaxChapters)
+    .where(eq(openstaxChapters.bookId, bookId))
+    .orderBy(openstaxChapters.chapterNumber);
+
+  const bookSections = bookChapters.length
+    ? await db
+        .select()
+        .from(openstaxSections)
+        .where(inArray(openstaxSections.chapterId, bookChapters.map((c) => c.id)))
+        .orderBy(openstaxSections.order)
+    : [];
+
+  const sectionsByChapter = new Map<string, typeof bookSections>();
+  for (const s of bookSections) {
+    const arr = sectionsByChapter.get(s.chapterId) ?? [];
+    arr.push(s);
+    sectionsByChapter.set(s.chapterId, arr);
+  }
+
+  const last = await db
+    .select({ order: modules.order })
+    .from(modules)
+    .where(eq(modules.courseId, courseId))
+    .orderBy(desc(modules.order))
+    .limit(1);
+  let nextModuleOrder = (last[0]?.order ?? 0) + 1;
+
+  for (const chapter of bookChapters) {
+    const moduleId = crypto.randomUUID();
+    await db.insert(modules).values({
+      id: moduleId,
+      courseId,
+      title: chapter.title,
+      order: nextModuleOrder++,
+      sourceRef: `openstax:book:${bookId}:chapter:${chapter.id}`,
+    });
+
+    const chSections = sectionsByChapter.get(chapter.id) ?? [];
+    let sectionOrder = 1;
+    for (const sec of chSections) {
+      await db.insert(sections).values({
+        id: crypto.randomUUID(),
+        moduleId,
+        title: sec.title,
+        order: sectionOrder++,
+        sourceRef: `openstax:book:${bookId}:section:${sec.id}`,
+      });
+    }
+  }
+
+  redirect(
+    `/courses/${courseId}?tab=modules&notice=${encodeURIComponent(`Imported ${book.title}`)}`,
+  );
 }

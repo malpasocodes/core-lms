@@ -23,7 +23,7 @@ export function CourseTabs({ courseId, canEdit }: CourseTabsProps) {
   const isGradebook = pathname.endsWith("/gradebook");
 
   const allTabs = canEdit
-    ? [...tabs, { key: "create-module", label: "Create Module" }]
+    ? [...tabs, { key: "create-module", label: "Create Module" }, { key: "import", label: "Import" }]
     : tabs;
 
   return (

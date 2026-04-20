@@ -18,7 +18,7 @@ import {
   announcements,
   users,
 } from "@/lib/schema";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, like, sql } from "drizzle-orm";
 import {
   createModuleAction,
   createSectionAction,
@@ -29,16 +29,18 @@ import {
 } from "@/lib/module-actions";
 import { createAssignmentAction } from "@/lib/assignment-actions";
 import { createAnnouncementAction, deleteAnnouncementAction } from "@/lib/announcement-actions";
+import { importOpenstaxBookToCourseAction } from "@/lib/openstax-actions";
+import { openstaxBooks, openstaxChapters, openstaxSections } from "@/lib/schema";
 import { CourseTabs } from "./_components/course-tabs";
 
 type CoursePageProps = {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; notice?: string; error?: string }>;
 };
 
 export default async function CourseDetailPage(props: CoursePageProps) {
   const { courseId } = (await props.params) || {};
-  const { tab = "overview" } = (await props.searchParams) || {};
+  const { tab = "overview", notice, error } = (await props.searchParams) || {};
 
   if (!courseId) {
     notFound();
@@ -213,6 +215,43 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     .where(eq(announcements.courseId, courseId))
     .orderBy(desc(announcements.createdAt));
 
+  // OpenStax catalog for the Import tab (instructors/admins only)
+  const importCatalog =
+    canEdit && tab === "import"
+      ? await db
+          .select({
+            id: openstaxBooks.id,
+            title: openstaxBooks.title,
+            subject: openstaxBooks.subject,
+            chapterCount: sql<number>`count(distinct ${openstaxChapters.id})`,
+            sectionCount: sql<number>`count(${openstaxSections.id})`,
+          })
+          .from(openstaxBooks)
+          .leftJoin(openstaxChapters, eq(openstaxChapters.bookId, openstaxBooks.id))
+          .leftJoin(openstaxSections, eq(openstaxSections.chapterId, openstaxChapters.id))
+          .groupBy(openstaxBooks.id, openstaxBooks.title, openstaxBooks.subject)
+          .orderBy(openstaxBooks.title)
+      : [];
+
+  const importedBookIds =
+    canEdit && tab === "import"
+      ? new Set(
+          (
+            await db
+              .select({ sourceRef: modules.sourceRef })
+              .from(modules)
+              .where(
+                and(
+                  eq(modules.courseId, courseId),
+                  like(modules.sourceRef, "openstax:book:%"),
+                ),
+              )
+          )
+            .map((r) => r.sourceRef?.match(/^openstax:book:([^:]+):/)?.[1])
+            .filter((id): id is string => Boolean(id))
+        )
+      : new Set<string>();
+
   // Learner progress totals
   const courseItemTotal = itemRows.length;
   const courseItemCompleted = user.role === "learner" ? learnerCompletionSet.size : 0;
@@ -258,6 +297,17 @@ export default async function CourseDetailPage(props: CoursePageProps) {
           <CourseTabs courseId={courseId} canEdit={canEdit} />
         </Suspense>
       </div>
+
+      {error && (
+        <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+      {notice && (
+        <div className="rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
+          {notice}
+        </div>
+      )}
 
       {tab === "overview" && (
         <div className="grid gap-4 md:grid-cols-2">
@@ -784,6 +834,65 @@ export default async function CourseDetailPage(props: CoursePageProps) {
               </form>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === "import" && canEdit && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Import from OpenStax</CardTitle>
+              <CardDescription>
+                Copy chapters and sections from an ingested textbook into this course.
+                Chapters become modules, sections become module sections. Content is not
+                copied — you fill activities in yourself.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {importCatalog.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No ingested OpenStax books yet. Ask an admin to ingest books from{" "}
+                  <a href="/admin/openstax" className="underline">
+                    /admin/openstax
+                  </a>
+                  .
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {importCatalog.map((book) => {
+                    const already = importedBookIds.has(book.id);
+                    return (
+                      <li
+                        key={book.id}
+                        className="flex items-center justify-between gap-4 py-3"
+                      >
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-semibold text-foreground">{book.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {Number(book.chapterCount)} chapters · {Number(book.sectionCount)} sections
+                            {book.subject ? ` · ${book.subject}` : ""}
+                          </p>
+                        </div>
+                        {already ? (
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Already imported
+                          </span>
+                        ) : (
+                          <form action={importOpenstaxBookToCourseAction}>
+                            <input type="hidden" name="courseId" value={courseId} />
+                            <input type="hidden" name="bookId" value={book.id} />
+                            <Button type="submit" size="sm" variant="outline">
+                              Import
+                            </Button>
+                          </form>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
