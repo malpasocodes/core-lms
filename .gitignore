@@ -39,6 +39,9 @@ yarn-error.log*
 # netlify
 .netlify
 
+# ingestion data (large source JSON, not tracked)
+/data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
