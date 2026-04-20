@@ -196,3 +196,37 @@ export const announcements = pgTable("announcements", {
 });
 
 export type Announcement = typeof announcements.$inferSelect;
+
+// ── OpenStax Content Library ───────────────────────────────────────────────
+
+export const openstaxBooks = pgTable("openstax_books", {
+  id: text("id").primaryKey(),          // slug, e.g. "college-physics-2e"
+  title: text("title").notNull(),
+  subject: text("subject"),
+  cnxId: text("cnx_id").notNull(),      // archive.cnx.org UUID
+  sourceUrl: text("source_url"),
+  chapterCount: integer("chapter_count"),
+  ingestedAt: timestamp("ingested_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const openstaxChapters = pgTable("openstax_chapters", {
+  id: text("id").primaryKey(),          // composite: bookId-chapterNumber
+  bookId: text("book_id").notNull().references(() => openstaxBooks.id, { onDelete: "cascade" }),
+  chapterNumber: integer("chapter_number").notNull(),
+  title: text("title").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const openstaxSections = pgTable("openstax_sections", {
+  id: text("id").primaryKey(),          // UUID from archive tree
+  chapterId: text("chapter_id").notNull().references(() => openstaxChapters.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  contentHtml: text("content_html"),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type OpenstaxBook = typeof openstaxBooks.$inferSelect;
+export type OpenstaxChapter = typeof openstaxChapters.$inferSelect;
+export type OpenstaxSection = typeof openstaxSections.$inferSelect;
