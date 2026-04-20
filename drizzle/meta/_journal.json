@@ -8,6 +8,13 @@
       "when": 1768712554828,
       "tag": "0000_steady_wallflower",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776702600129,
+      "tag": "0001_bored_grandmaster",
+      "breakpoints": true
     }
   ]
 }

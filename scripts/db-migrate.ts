@@ -39,8 +39,8 @@ async function main() {
     const fullPath = path.join(migrationsDir, file);
     const raw = fs.readFileSync(fullPath, "utf8");
     const statements = raw
-      .split(/;\s*\n/g)
-      .map((stmt) => stmt.trim())
+      .split(/--> statement-breakpoint/g)
+      .map((stmt) => stmt.trim().replace(/;$/, "").trim())
       .filter(Boolean);
 
     // eslint-disable-next-line no-console
