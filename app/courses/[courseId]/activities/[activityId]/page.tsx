@@ -267,6 +267,13 @@ export default async function ActivityPage(props: ActivityPageProps) {
             </ReactMarkdown>
           </div>
         </div>
+      ) : item.itemType === "read" && payload.fileType === "html" ? (
+        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
+          <div
+            className="prose prose-neutral dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: item.itemContent }}
+          />
+        </div>
       ) : null}
 
       {/* ── Write ── */}

@@ -6,6 +6,8 @@ import { and, desc, eq, inArray, like } from "drizzle-orm";
 import { getCurrentUser, requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import {
+  contentItems,
+  courses,
   modules,
   openstaxBooks,
   openstaxChapters,
@@ -196,4 +198,85 @@ export async function importOpenstaxBookToCourseAction(formData: FormData) {
   redirect(
     `/courses/${courseId}?tab=modules&notice=${encodeURIComponent(`Imported ${book.title}`)}`,
   );
+}
+
+export async function importOpenstaxSectionAsReadActivityAction(formData: FormData) {
+  const sectionId = (formData.get("sectionId") as string | null)?.trim();
+  const titleOverride = (formData.get("title") as string | null)?.trim();
+
+  if (!sectionId) redirect("/dashboard?error=Missing+section");
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+
+  const db = await getDb();
+
+  const secRow = await db
+    .select({
+      sectionId: sections.id,
+      sourceRef: sections.sourceRef,
+      courseId: courses.id,
+      instructorId: courses.instructorId,
+    })
+    .from(sections)
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(sections.id, sectionId))
+    .limit(1);
+
+  const sec = secRow[0];
+  if (!sec?.courseId) redirect("/dashboard?error=Section+not+found");
+
+  const isOwner = user.role === "instructor" && user.id === sec.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect(`/courses/${sec.courseId}?error=Not+authorized`);
+  }
+
+  const match = sec.sourceRef?.match(/^openstax:book:[^:]+:section:(.+)$/);
+  const openstaxSectionId = match?.[1];
+  if (!openstaxSectionId) {
+    redirect(
+      `/courses/${sec.courseId}?tab=modules&error=${encodeURIComponent("Section is not linked to an OpenStax source")}`,
+    );
+  }
+
+  const openstaxSection = await db.query.openstaxSections.findFirst({
+    where: (s, { eq }) => eq(s.id, openstaxSectionId!),
+  });
+  if (!openstaxSection) {
+    redirect(
+      `/courses/${sec.courseId}?tab=modules&error=${encodeURIComponent("OpenStax section not found")}`,
+    );
+  }
+  if (!openstaxSection.contentHtml) {
+    redirect(
+      `/courses/${sec.courseId}?tab=modules&error=${encodeURIComponent("OpenStax section has no content")}`,
+    );
+  }
+
+  const last = await db
+    .select({ order: contentItems.order })
+    .from(contentItems)
+    .where(eq(contentItems.sectionId, sectionId))
+    .orderBy(desc(contentItems.order))
+    .limit(1);
+  const order = (last[0]?.order ?? 0) + 1;
+
+  await db.insert(contentItems).values({
+    id: crypto.randomUUID(),
+    sectionId,
+    type: "read",
+    title: titleOverride || openstaxSection.title,
+    content: openstaxSection.contentHtml,
+    contentPayload: JSON.stringify({
+      fileType: "html",
+      openstaxSectionId,
+      sourceRef: sec.sourceRef,
+    }),
+    sourceRef: sec.sourceRef,
+    order,
+  });
+
+  redirect(`/courses/${sec.courseId}?tab=modules&notice=${encodeURIComponent("Imported Read activity from OpenStax")}`);
 }

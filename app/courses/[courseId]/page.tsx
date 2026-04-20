@@ -29,7 +29,10 @@ import {
 } from "@/lib/module-actions";
 import { createAssignmentAction } from "@/lib/assignment-actions";
 import { createAnnouncementAction, deleteAnnouncementAction } from "@/lib/announcement-actions";
-import { importOpenstaxBookToCourseAction } from "@/lib/openstax-actions";
+import {
+  importOpenstaxBookToCourseAction,
+  importOpenstaxSectionAsReadActivityAction,
+} from "@/lib/openstax-actions";
 import { openstaxBooks, openstaxChapters, openstaxSections } from "@/lib/schema";
 import { CourseTabs } from "./_components/course-tabs";
 
@@ -101,6 +104,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
             moduleId: sections.moduleId,
             title: sections.title,
             order: sections.order,
+            sourceRef: sections.sourceRef,
           })
           .from(sections)
           .where(inArray(sections.moduleId, moduleIds))
@@ -567,6 +571,29 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                         <Button type="submit" size="sm">Upload Read activity</Button>
                                       </form>
                                     </details>
+
+                                    {/* Import Read — from OpenStax (only when section is linked) */}
+                                    {sec.sourceRef?.startsWith("openstax:book:") && (
+                                      <details className="group rounded border border-border/40 bg-background/40">
+                                        <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                          + Import Read — from OpenStax
+                                        </summary>
+                                        <form
+                                          action={importOpenstaxSectionAsReadActivityAction}
+                                          className="space-y-2 border-t border-border/40 p-3"
+                                        >
+                                          <input type="hidden" name="sectionId" value={sec.id} />
+                                          <p className="text-xs text-muted-foreground">
+                                            Imports the OpenStax section text linked to this section as a Read activity.
+                                          </p>
+                                          <div className="space-y-1">
+                                            <Label htmlFor={`import-read-title-${sec.id}`}>Title (optional — defaults to OpenStax section title)</Label>
+                                            <Input id={`import-read-title-${sec.id}`} name="title" placeholder="Leave blank to use OpenStax title" />
+                                          </div>
+                                          <Button type="submit" size="sm">Import Read activity</Button>
+                                        </form>
+                                      </details>
+                                    )}
 
                                     {/* Write */}
                                     <details className="group rounded border border-border/40 bg-background/40">
