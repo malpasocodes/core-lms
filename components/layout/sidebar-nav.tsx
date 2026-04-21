@@ -10,6 +10,7 @@ import {
   BookOpen01Icon,
   UserGroupIcon,
   Settings01Icon,
+  BookDownloadIcon,
   Menu01Icon,
   Cancel01Icon,
 } from "@hugeicons/core-free-icons";
@@ -61,6 +62,7 @@ function SidebarContent({ user, onNavigate }: { user?: { email: string; role: Ro
 
   const adminItems: NavItem[] = [
     { label: "Roster", href: "/admin/roster", icon: UserGroupIcon },
+    { label: "OpenStax", href: "/admin/openstax", icon: BookDownloadIcon },
     { label: "Admin", href: "/admin", icon: Settings01Icon },
   ];
 
