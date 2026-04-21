@@ -353,6 +353,64 @@ export async function updateContentItemAction(formData: FormData) {
   redirect(redirectTo || "/courses/content?notice=Content%20updated");
 }
 
+export async function updateReadHtmlActivityAction(formData: FormData) {
+  const itemId = (formData.get("itemId") as string | null)?.trim();
+  const title = (formData.get("title") as string | null)?.trim();
+  const content = formData.get("content") as string | null;
+  const redirectTo = (formData.get("redirectTo") as string | null)?.trim();
+
+  if (!itemId || !title || content === null) {
+    redirect("/dashboard?error=Missing%20fields");
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+
+  const db = await getDb();
+  const itemRow = await db
+    .select({
+      id: contentItems.id,
+      type: contentItems.type,
+      contentPayload: contentItems.contentPayload,
+      courseId: courses.id,
+      instructorId: courses.instructorId,
+    })
+    .from(contentItems)
+    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(contentItems.id, itemId))
+    .limit(1);
+
+  const item = itemRow[0];
+  if (!item || !item.courseId) {
+    redirect("/dashboard?error=Content%20not%20found");
+  }
+
+  const isOwner = user.role === "instructor" && user.id === item.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect(`/courses/${item.courseId}?error=Not%20authorized`);
+  }
+
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = item.contentPayload ? JSON.parse(item.contentPayload) : {};
+  } catch {
+    payload = {};
+  }
+  if (item.type !== "read" || payload.fileType !== "html") {
+    redirect(`/courses/${item.courseId}?error=Not%20an%20HTML%20Read%20activity`);
+  }
+
+  await db
+    .update(contentItems)
+    .set({ title, content: content! })
+    .where(eq(contentItems.id, itemId));
+
+  redirect(redirectTo || `/courses/${item.courseId}?tab=modules&notice=Content%20updated`);
+}
+
 export async function deleteContentItemAction(formData: FormData) {
   const itemId = (formData.get("itemId") as string | null)?.trim();
   if (!itemId) {

@@ -15,6 +15,7 @@ import { assignments, contentItems, courses, modules, sections, submissions } fr
 import { markContentCompleteAction } from "@/lib/progress-actions";
 import { NormalizedContentRenderer } from "@/components/normalized-content-renderer";
 import { MarkdownItemEditor } from "@/components/markdown-item-editor";
+import { HtmlItemEditor } from "@/components/html-item-editor";
 import { GenerateMcqButton } from "@/components/generate-mcq-button";
 import { generateMcqFromPdfAction } from "@/lib/mcq-actions";
 import { submitWriteActivityAction } from "@/lib/module-actions";
@@ -267,6 +268,13 @@ export default async function ActivityPage(props: ActivityPageProps) {
             </ReactMarkdown>
           </div>
         </div>
+      ) : item.itemType === "read" && payload.fileType === "html" && (isOwner || isAdmin) ? (
+        <HtmlItemEditor
+          itemId={activityId}
+          initialTitle={item.itemTitle}
+          initialContent={item.itemContent}
+          redirectTo={`/courses/${courseId}/activities/${activityId}`}
+        />
       ) : item.itemType === "read" && payload.fileType === "html" ? (
         <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
           <div
