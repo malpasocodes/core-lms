@@ -51,7 +51,7 @@ export function DeleteCourseForm({ courses }: { courses: Course[] }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete course?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete <strong>{selectedCourse?.title}</strong> and all its modules, content, assignments, and enrollments. This action cannot be undone.
+              This will permanently delete <strong>{selectedCourse?.title}</strong> and all its modules, activities, assessments, and enrollments. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { assignments, enrollments, grades, mcqQuestions, submissions } from "@/lib/schema";
+import { activities, assessments, grades, modules, sections, submissions } from "@/lib/schema";
 
 export async function submitMcqAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -13,38 +13,48 @@ export async function submitMcqAction(formData: FormData) {
 
   if (user.role !== "learner") redirect("/dashboard?error=Only%20learners%20can%20submit");
 
-  const assignmentId = (formData.get("assignmentId") as string | null)?.trim();
-  if (!assignmentId) redirect("/dashboard?error=Missing%20assignment");
+  const assessmentId = (formData.get("assessmentId") as string | null)?.trim();
+  if (!assessmentId) redirect("/dashboard?error=Missing%20assessment");
 
   const db = await getDb();
 
-  const assignment = await db.query.assignments.findFirst({
-    columns: { id: true, courseId: true },
-    where: (a, { eq }) => eq(a.id, assignmentId),
-  });
-  if (!assignment) redirect("/dashboard?error=Assignment%20not%20found");
+  const row = await db
+    .select({
+      assessmentId: assessments.id,
+      activityId: activities.id,
+      courseId: modules.courseId,
+    })
+    .from(assessments)
+    .leftJoin(activities, eq(assessments.activityId, activities.id))
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
+    .where(eq(assessments.id, assessmentId))
+    .limit(1);
+
+  const found = row[0];
+  if (!found || !found.courseId || !found.activityId) {
+    redirect("/dashboard?error=Assessment%20not%20found");
+  }
 
   const enrollment = await db.query.enrollments.findFirst({
     columns: { id: true },
     where: (e, { and, eq }) =>
-      and(eq(e.courseId, assignment.courseId), eq(e.userId, user.id)),
+      and(eq(e.courseId, found.courseId as string), eq(e.userId, user.id)),
   });
-  if (!enrollment) redirect(`/courses/${assignment.courseId}?error=Not%20enrolled`);
+  if (!enrollment) redirect(`/courses/${found.courseId}?error=Not%20enrolled`);
 
   const questions = await db.query.mcqQuestions.findMany({
-    where: (q, { eq }) => eq(q.assignmentId, assignmentId),
+    where: (q, { eq }) => eq(q.assessmentId, assessmentId),
     orderBy: (q, { asc }) => [asc(q.order)],
   });
-  if (questions.length === 0) redirect(`/courses/${assignment.courseId}?error=No%20questions`);
+  if (questions.length === 0) redirect(`/courses/${found.courseId}?error=No%20questions`);
 
-  // Parse selected answers from FormData
   const answers: Record<string, number> = {};
   for (const q of questions) {
     const val = formData.get(`answer_${q.id}`);
     if (val !== null) answers[q.id] = parseInt(val as string, 10);
   }
 
-  // Auto-grade
   let correct = 0;
   for (const q of questions) {
     if (answers[q.id] === q.correctIndex) correct++;
@@ -56,7 +66,7 @@ export async function submitMcqAction(formData: FormData) {
   const existing = await db.query.submissions.findFirst({
     columns: { id: true },
     where: (s, { and, eq }) =>
-      and(eq(s.assignmentId, assignmentId), eq(s.userId, user.id)),
+      and(eq(s.assessmentId, assessmentId), eq(s.userId, user.id)),
   });
 
   if (existing) {
@@ -75,7 +85,7 @@ export async function submitMcqAction(formData: FormData) {
     const submissionId = crypto.randomUUID();
     await db.insert(submissions).values({
       id: submissionId,
-      assignmentId,
+      assessmentId,
       userId: user.id,
       mcqAnswers: JSON.stringify(answers),
       submittedAt: now,
@@ -89,5 +99,5 @@ export async function submitMcqAction(formData: FormData) {
     });
   }
 
-  redirect(`/courses/${assignment.courseId}/assignments/${assignmentId}?notice=Submitted`);
+  redirect(`/courses/${found.courseId}/activities/${found.activityId}?notice=Submitted`);
 }

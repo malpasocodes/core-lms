@@ -3,8 +3,17 @@ import { Suspense } from "react";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { assignments, enrollments, grades, submissions, users } from "@/lib/schema";
-import { eq, inArray } from "drizzle-orm";
+import {
+  activities,
+  assessments,
+  enrollments,
+  grades,
+  modules,
+  sections,
+  submissions,
+  users,
+} from "@/lib/schema";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { CourseTabs } from "../_components/course-tabs";
 import { cn } from "@/lib/utils";
 
@@ -26,12 +35,22 @@ export default async function GradebookPage({ params }: Props) {
   const isAdmin = user.role === "admin";
   if (!isOwner && !isAdmin) redirect(`/courses/${courseId}`);
 
-  // Assignments for this course
-  const assignmentList = await db
-    .select({ id: assignments.id, title: assignments.title, type: assignments.type })
-    .from(assignments)
-    .where(eq(assignments.courseId, courseId))
-    .orderBy(assignments.createdAt);
+  // All assessments in this course (joined through activity → section → module).
+  // Show only graded assessments — formative assessments don't belong in a grade view.
+  const assessmentList = await db
+    .select({
+      id: assessments.id,
+      activityId: assessments.activityId,
+      title: assessments.title,
+      type: assessments.type,
+      activityTitle: activities.title,
+    })
+    .from(assessments)
+    .leftJoin(activities, eq(assessments.activityId, activities.id))
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
+    .where(and(eq(modules.courseId, courseId), eq(assessments.graded, true)))
+    .orderBy(asc(assessments.createdAt));
 
   // Enrolled learners
   const learnerList = await db
@@ -41,32 +60,32 @@ export default async function GradebookPage({ params }: Props) {
     .where(eq(enrollments.courseId, courseId))
     .orderBy(users.email);
 
-  // Submissions + grades for all assignments in this course
+  // Submissions + grades for all assessments in this course
   type CellData = { submittedAt: Date; score: number | null };
   const cellMap = new Map<string, CellData>();
 
-  if (assignmentList.length > 0 && learnerList.length > 0) {
+  if (assessmentList.length > 0 && learnerList.length > 0) {
     const rows = await db
       .select({
-        assignmentId: submissions.assignmentId,
+        assessmentId: submissions.assessmentId,
         userId: submissions.userId,
         submittedAt: submissions.submittedAt,
         score: grades.score,
       })
       .from(submissions)
       .leftJoin(grades, eq(grades.submissionId, submissions.id))
-      .where(inArray(submissions.assignmentId, assignmentList.map((a) => a.id)));
+      .where(inArray(submissions.assessmentId, assessmentList.map((a) => a.id)));
 
     for (const row of rows) {
-      cellMap.set(`${row.userId}-${row.assignmentId}`, {
+      cellMap.set(`${row.userId}-${row.assessmentId}`, {
         submittedAt: row.submittedAt,
         score: row.score ?? null,
       });
     }
   }
 
-  // Per-assignment averages
-  const assignmentAvg = assignmentList.map((a) => {
+  // Per-assessment averages
+  const assessmentAvg = assessmentList.map((a) => {
     const scored = learnerList
       .map((l) => cellMap.get(`${l.id}-${a.id}`)?.score)
       .filter((s): s is number => s !== null && s !== undefined);
@@ -75,7 +94,7 @@ export default async function GradebookPage({ params }: Props) {
 
   // Per-learner averages
   const learnerAvg = learnerList.map((l) => {
-    const scored = assignmentList
+    const scored = assessmentList
       .map((a) => cellMap.get(`${l.id}-${a.id}`)?.score)
       .filter((s): s is number => s !== null && s !== undefined);
     return scored.length ? Math.round(scored.reduce((sum, s) => sum + s, 0) / scored.length) : null;
@@ -98,12 +117,12 @@ export default async function GradebookPage({ params }: Props) {
           Gradebook
           <span className="ml-2 font-normal text-slate-400">
             {learnerList.length} {learnerList.length === 1 ? "learner" : "learners"} ·{" "}
-            {assignmentList.length} {assignmentList.length === 1 ? "assignment" : "assignments"}
+            {assessmentList.length} graded {assessmentList.length === 1 ? "assessment" : "assessments"}
           </span>
         </h2>
 
-        {assignmentList.length === 0 ? (
-          <p className="text-sm text-slate-400">No assignments in this course yet.</p>
+        {assessmentList.length === 0 ? (
+          <p className="text-sm text-slate-400">No graded assessments in this course yet.</p>
         ) : learnerList.length === 0 ? (
           <p className="text-sm text-slate-400">No learners enrolled yet.</p>
         ) : (
@@ -114,7 +133,7 @@ export default async function GradebookPage({ params }: Props) {
                   <th className="sticky left-0 bg-slate-50 px-4 py-2.5 text-left font-semibold text-slate-700 min-w-[200px]">
                     Learner
                   </th>
-                  {assignmentList.map((a, i) => (
+                  {assessmentList.map((a, i) => (
                     <th
                       key={a.id}
                       className="px-3 py-2.5 text-center font-semibold text-slate-700 min-w-[110px]"
@@ -124,8 +143,8 @@ export default async function GradebookPage({ params }: Props) {
                       </div>
                       <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wide">
                         {a.type === "mcq" ? "MCQ" : "Open"}
-                        {assignmentAvg[i] !== null && (
-                          <span className="ml-1">· avg {assignmentAvg[i]}</span>
+                        {assessmentAvg[i] !== null && (
+                          <span className="ml-1">· avg {assessmentAvg[i]}</span>
                         )}
                       </div>
                     </th>
@@ -141,7 +160,7 @@ export default async function GradebookPage({ params }: Props) {
                     <td className="sticky left-0 bg-white px-4 py-2.5 text-slate-800 hover:bg-slate-50 font-medium truncate max-w-[200px]">
                       {learner.email}
                     </td>
-                    {assignmentList.map((a) => {
+                    {assessmentList.map((a) => {
                       const cell = cellMap.get(`${learner.id}-${a.id}`);
                       return (
                         <td key={a.id} className="px-3 py-2.5 text-center">
@@ -164,7 +183,7 @@ export default async function GradebookPage({ params }: Props) {
         )}
 
         {/* Legend */}
-        {assignmentList.length > 0 && learnerList.length > 0 && (
+        {assessmentList.length > 0 && learnerList.length > 0 && (
           <div className="flex items-center gap-4 pt-1 text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-100 border border-green-300" />

@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("user_role", ["learner", "instructor", "admin"]);
 
@@ -72,14 +72,14 @@ export const sections = pgTable("sections", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const contentTypeEnum = pgEnum("content_type", ["page", "link", "normalized_text", "pdf", "markdown", "watch", "listen", "read", "write"]);
+export const activityTypeEnum = pgEnum("activity_type", ["watch", "listen", "read", "write"]);
 
-export const contentItems = pgTable("content_items", {
+export const activities = pgTable("activities", {
   id: text("id").primaryKey(),
   sectionId: text("section_id")
     .notNull()
     .references(() => sections.id, { onDelete: "cascade" }),
-  type: contentTypeEnum("type").notNull(),
+  type: activityTypeEnum("type").notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
   contentPayload: text("content_payload"),
@@ -90,31 +90,34 @@ export const contentItems = pgTable("content_items", {
 
 export type Module = typeof modules.$inferSelect;
 export type Section = typeof sections.$inferSelect;
-export type ContentItem = typeof contentItems.$inferSelect;
+export type Activity = typeof activities.$inferSelect;
 
-export const assignments = pgTable("assignments", {
+export const assessmentTypeEnum = pgEnum("assessment_type", ["open_ended", "mcq"]);
+
+export const assessments = pgTable("assessments", {
   id: text("id").primaryKey(),
-  courseId: text("course_id")
+  activityId: text("activity_id")
     .notNull()
-    .references(() => courses.id, { onDelete: "cascade" }),
-  sectionId: text("section_id").references(() => sections.id, { onDelete: "set null" }),
+    .references(() => activities.id, { onDelete: "cascade" }),
+  type: assessmentTypeEnum("type").notNull().default("open_ended"),
   title: text("title").notNull(),
   description: text("description"),
-  type: text("type").$type<"open_ended" | "mcq">().notNull().default("open_ended"),
-  sourceContentItemId: text("source_content_item_id").references(() => contentItems.id, { onDelete: "set null" }),
-  linkedActivityId: text("linked_activity_id").references(() => contentItems.id, { onDelete: "set null" }),
+  graded: boolean("graded").notNull().default(false),
   mcqModel: text("mcq_model"),
   dueAt: timestamp("due_at", { withTimezone: true }),
+  order: integer("order").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export type Assessment = typeof assessments.$inferSelect;
 
 export const submissions = pgTable(
   "submissions",
   {
     id: text("id").primaryKey(),
-    assignmentId: text("assignment_id")
+    assessmentId: text("assessment_id")
       .notNull()
-      .references(() => assignments.id, { onDelete: "cascade" }),
+      .references(() => assessments.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -124,7 +127,7 @@ export const submissions = pgTable(
     submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
-    uniqueSubmission: uniqueIndex("submissions_assignment_user_unique").on(table.assignmentId, table.userId),
+    uniqueSubmission: uniqueIndex("submissions_assessment_user_unique").on(table.assessmentId, table.userId),
   })
 );
 
@@ -135,19 +138,18 @@ export const completions = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    contentItemId: text("content_item_id")
+    activityId: text("activity_id")
       .notNull()
-      .references(() => contentItems.id, { onDelete: "cascade" }),
+      .references(() => activities.id, { onDelete: "cascade" }),
     completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
-    uniqueCompletion: uniqueIndex("completions_user_item_unique").on(table.userId, table.contentItemId),
+    uniqueCompletion: uniqueIndex("completions_user_activity_unique").on(table.userId, table.activityId),
   })
 );
 
-export type Completion = typeof completions.$inferSelect;
-export type Assignment = typeof assignments.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
+export type Completion = typeof completions.$inferSelect;
 
 export const grades = pgTable(
   "grades",
@@ -170,9 +172,9 @@ export type Grade = typeof grades.$inferSelect;
 
 export const mcqQuestions = pgTable("mcq_questions", {
   id: text("id").primaryKey(),
-  assignmentId: text("assignment_id")
+  assessmentId: text("assessment_id")
     .notNull()
-    .references(() => assignments.id, { onDelete: "cascade" }),
+    .references(() => assessments.id, { onDelete: "cascade" }),
   order: integer("order").notNull(),
   questionText: text("question_text").notNull(),
   options: text("options").notNull(),

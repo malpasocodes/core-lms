@@ -1,5 +1,118 @@
 # Changelog
 
+## 2026-05-01
+
+### Activities & Assessments Overhaul
+- Replaced `content_items` and `assignments` with a cleaner two-tier model: **activities** (Watch / Listen / Read / Write) inside sections, with **assessments** (open_ended or mcq, formative by default) attached per activity
+- Boolean per-activity completion (`completions`) — Watch/Listen/Read complete via "Mark complete"; Write completes when the learner submits the prompt response
+- Write activities auto-create a built-in `open_ended` assessment as their canonical submission target so the inline submit form rides the same `submissions` path; the built-in is hidden from "other assessments" listings
+- Assessments support `graded` (default `false`), optional `dueAt`, ordered per activity; gradebook now filters to graded assessments only
+- New `/courses/[courseId]/activities/[activityId]/assessments/[assessmentId]` route replaces `/assignments/[assignmentId]`
+- Course page **Assessments** tab replaces the old **Assignments** tab; overview card lists assessments grouped by activity
+- Destructive `0002_activities_and_assessments` migration drops the old tables/enum and creates the new shape (no data migration)
+- Vestigial migration files (`0009`–`0020`) and `scripts/mark-migrations.ts` removed; consolidated baseline is `0001` + `0002`
+
+**Files created:**
+- `drizzle/0002_activities_and_assessments.sql`
+- `drizzle/meta/0002_snapshot.json`
+- `lib/assessment-actions.ts`
+- `app/courses/[courseId]/activities/[activityId]/assessments/[assessmentId]/page.tsx`
+
+**Files modified:**
+- `lib/schema.ts` — `activities` + `assessments` tables, `activity_type`/`assessment_type` enums, `submissions.assessmentId`, `completions.activityId`, `mcqQuestions.assessmentId`, unique indexes
+- `lib/module-actions.ts` — drops content-item CRUD; `createWriteActivityAction` auto-creates built-in assessment; `submitWriteActivityAction` writes to `submissions` + `completions`; `updateReadMarkdownActivityAction` added; `deleteActivityAction` replaces `deleteContentItemAction`
+- `lib/mcq-actions.ts`, `lib/mcq-submit-actions.ts`, `lib/progress-actions.ts`, `lib/ingest-actions.ts`, `lib/openstax-actions.ts` — re-keyed to activities/assessments
+- `app/courses/[courseId]/page.tsx` — Assessments tab + card, drops Assignments tab/forms
+- `app/courses/[courseId]/_components/course-tabs.tsx` — `assessments` tab key
+- `app/courses/[courseId]/gradebook/page.tsx` — joins assessments through activity → section → module, filters `graded = true`
+- `app/courses/content/page.tsx`, `app/courses/content/_components/delete-content-form.tsx` — list/delete activities
+- `app/api/upload-image/route.ts` — looks up activity, not contentItem
+- `components/markdown-item-editor.tsx`, `components/html-item-editor.tsx` — form param renamed to `activityId`; markdown editor uses new dedicated action
+- `scripts/ingest-finance.ts` — emits Read activities with `fileType: "normalized"` payload
+
+**Files deleted:**
+- `lib/assignment-actions.ts`
+- `app/courses/[courseId]/assignments/[assignmentId]/page.tsx`
+- `app/courses/[courseId]/items/[itemId]/page.tsx`
+- `scripts/mark-migrations.ts`
+- `drizzle/0009_phase9_grades.sql` through `drizzle/0020_add_openstax_tables.sql`
+
+## 2026-04-20
+
+### OpenStax Admin Nav Entry
+- Added **OpenStax** link to the admin sidebar (between Roster and Admin) pointing to the existing `/admin/openstax` textbook ingestion page
+- Uses the `BookDownloadIcon` from HugeIcons to signal "pull a textbook into the system"
+- Visible only to admins — `adminItems` is gated on `user?.role === "admin"`
+
+**Files modified:**
+- `components/layout/sidebar-nav.tsx` — imported `BookDownloadIcon`, added OpenStax `NavItem`
+
+### Image Upload for HTML Read Activities
+- Instructors can now upload images directly into an HTML Read activity while editing — no need to host them externally
+- New "Insert image" control in the edit pane accepts PNG or JPEG up to 5 MB; on upload, an `<img>` tag is inserted at the textarea cursor
+- Uploads go through a new `/api/upload-image` route that auth-checks the user against the activity's course and stores files in R2 at `${courseId}/${sectionId}/${activityId}/images/${uuid}.${ext}`
+- No page reload — in-progress edits to the HTML body are preserved across image uploads
+
+**Files created:**
+- `app/api/upload-image/route.ts`
+
+**Files modified:**
+- `components/html-item-editor.tsx` — added upload panel, cursor-aware insertion, inline error state
+
+### Inline Editing of HTML Read Activities
+- Instructors and admins can now edit an OpenStax-imported (html) Read activity directly from the activity page — Preview/Edit toggle mirrors the existing markdown Read editor
+- Edit mode exposes the raw HTML in a textarea, so small fixes (e.g., removing broken `<img>` tags, fixing typos) no longer require a re-import
+- Learners continue to see the read-only rendered view
+- Save preserves `type: "read"` and `contentPayload.fileType: "html"` — only title and content are written back
+
+**Files created:**
+- `components/html-item-editor.tsx`
+
+**Files modified:**
+- `lib/module-actions.ts` — new `updateReadHtmlActivityAction` server action
+- `app/courses/[courseId]/activities/[activityId]/page.tsx` — owner/admin branch renders `HtmlItemEditor`; learners keep the read-only render
+
+### One-Click OpenStax Section Import as Read Activity
+- Instructors can import the OpenStax section text linked to a course section directly as a Read activity — no download/upload round-trip required
+- New `+ Import Read — from OpenStax` form appears next to `+ Read` in the module view, but only when the section has an OpenStax `sourceRef` from the structure-import flow
+- Optional title override; defaults to the OpenStax section title
+- Stored as a Read activity with `contentPayload.fileType = "html"` so the original OpenStax formatting (including math, figures, tables) is preserved
+- Added a new `html` rendering branch to the activity viewer using `dangerouslySetInnerHTML` inside a `prose` wrapper (OpenStax HTML is trusted server-side content)
+
+**Files created:**
+- (none)
+
+**Files modified:**
+- `lib/openstax-actions.ts` — new `importOpenstaxSectionAsReadActivityAction` server action
+- `app/courses/[courseId]/page.tsx` — added `+ Import Read — from OpenStax` form; included `sourceRef` in section query
+- `app/courses/[courseId]/activities/[activityId]/page.tsx` — added `fileType === "html"` render branch
+
+### Migration Baseline Consolidation
+- New Drizzle-generated `0001_bored_grandmaster` migration that captures every schema change since `0000`: announcements, `mcq_questions`, OpenStax tables (`openstax_books`, `openstax_chapters`, `openstax_sections`), the `modules → sections` refactor, content_type enum additions (`pdf`, `markdown`, `watch`, `listen`, `read`, `write`), `assignments` columns (`section_id`, `type`, `source_content_item_id`, `linked_activity_id`, `mcq_model`, `due_at`), `submissions.mcq_answers`, and `content_items.section_id`
+- Migration runner updated to split on Drizzle's native `--> statement-breakpoint` marker (required to parse 0001 correctly)
+- New `scripts/mark-migrations.ts` one-off seeder inserts historical filenames into the `_migrations` tracking table so existing databases skip already-applied migrations on next run
+
+**Files created:**
+- `drizzle/0001_bored_grandmaster.sql`
+- `drizzle/meta/0001_snapshot.json`
+- `scripts/mark-migrations.ts`
+
+**Files modified:**
+- `scripts/db-migrate.ts` — split on `--> statement-breakpoint` instead of `;\s*\n`
+- `drizzle/meta/_journal.json` — registered 0001
+
+### Working-Tree Cleanup
+- Added `/data/` to `.gitignore` so the 2.2MB `finance_normalized.json` ingestion source stays out of git
+- Removed stray working-tree copies of files that were deleted in commit `f56c98d` but reappeared (iCloud-sync artifacts): `components/layout/primary-nav.tsx`, `app/dashboard/_components/course-form.tsx`, and a duplicate `data/APP_TEMPLATE.md` (the tracked `docs/APP_TEMPLATE.md` is unchanged)
+
+**Files modified:**
+- `.gitignore` — ignore `/data/`
+
+**Files deleted (from working tree):**
+- `app/dashboard/_components/course-form.tsx`
+- `components/layout/primary-nav.tsx`
+- `data/APP_TEMPLATE.md`
+
 ## 2026-04-02
 
 ### Production Go-Live on Netlify

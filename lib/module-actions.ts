@@ -1,12 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { uploadFileToR2, uploadPdfToR2 } from "@/lib/r2";
-import { assignments, contentItems, courses, modules, sections } from "@/lib/schema";
+import { activities, assessments, completions, courses, modules, sections, submissions } from "@/lib/schema";
 
 export async function createModuleAction(formData: FormData) {
   const title = (formData.get("title") as string | null)?.trim();
@@ -177,189 +177,17 @@ export async function deleteModuleAction(formData: FormData) {
   redirect("/courses/modules?notice=Module%20deleted");
 }
 
-export async function createContentItemAction(formData: FormData) {
-  const sectionId = (formData.get("sectionId") as string | null)?.trim();
-  const title = (formData.get("title") as string | null)?.trim();
-  const type = (formData.get("type") as string | null)?.trim();
-  const content = (formData.get("content") as string | null)?.trim();
-
-  if (!sectionId || !title || !type || !content) {
-    redirect(`/dashboard?error=Missing%20content%20fields`);
-  }
-
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-
-  const db = await getDb();
-  const sectionRow = await db
-    .select({
-      courseId: courses.id,
-      instructorId: courses.instructorId,
-    })
-    .from(sections)
-    .leftJoin(modules, eq(sections.moduleId, modules.id))
-    .leftJoin(courses, eq(modules.courseId, courses.id))
-    .where(eq(sections.id, sectionId))
-    .limit(1);
-
-  const sec = sectionRow[0];
-  if (!sec?.courseId) redirect("/dashboard?error=Section%20not%20found");
-
-  const isOwner = user.role === "instructor" && user.id === sec.instructorId;
-  const isAdmin = user.role === "admin";
-  if (!isOwner && !isAdmin) {
-    redirect(`/courses/${sec.courseId}?error=Not%20authorized`);
-  }
-
-  if (type !== "page" && type !== "link" && type !== "markdown") {
-    redirect(`/courses/${sec.courseId}?error=Invalid%20content%20type`);
-  }
-
-  const last = await db
-    .select({ order: contentItems.order })
-    .from(contentItems)
-    .where(eq(contentItems.sectionId, sectionId))
-    .orderBy(desc(contentItems.order))
-    .limit(1);
-  const nextOrder = (last[0]?.order ?? 0) + 1;
-
-  await db.insert(contentItems).values({
-    id: crypto.randomUUID(),
-    sectionId,
-    title,
-    type,
-    content,
-    order: nextOrder,
-  });
-
-  redirect(`/courses/${sec.courseId}`);
-}
-
-export async function uploadPdfContentItemAction(formData: FormData) {
-  const sectionId = (formData.get("sectionId") as string | null)?.trim();
-  const title = (formData.get("title") as string | null)?.trim();
-  const file = formData.get("file") as File | null;
-
-  if (!sectionId || !title || !file || file.size === 0) {
-    redirect("/dashboard?error=Missing%20required%20fields");
-  }
-
-  if (file.type !== "application/pdf") {
-    redirect("/dashboard?error=File%20must%20be%20a%20PDF");
-  }
-
-  const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
-  if (file.size > MAX_BYTES) {
-    redirect("/dashboard?error=PDF%20must%20be%20under%2020MB");
-  }
-
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-
-  const db = await getDb();
-  const sectionRow = await db
-    .select({ courseId: courses.id, instructorId: courses.instructorId })
-    .from(sections)
-    .leftJoin(modules, eq(sections.moduleId, modules.id))
-    .leftJoin(courses, eq(modules.courseId, courses.id))
-    .where(eq(sections.id, sectionId))
-    .limit(1);
-
-  const sec = sectionRow[0];
-  if (!sec?.courseId) redirect("/dashboard?error=Section%20not%20found");
-
-  const isOwner = user.role === "instructor" && user.id === sec.instructorId;
-  const isAdmin = user.role === "admin";
-  if (!isOwner && !isAdmin) {
-    redirect(`/courses/${sec.courseId}?error=Not%20authorized`);
-  }
-
-  const key = `${sec.courseId}/${sectionId}/${crypto.randomUUID()}.pdf`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const publicUrl = await uploadPdfToR2(buffer, key);
-
-  const last = await db
-    .select({ order: contentItems.order })
-    .from(contentItems)
-    .where(eq(contentItems.sectionId, sectionId))
-    .orderBy(desc(contentItems.order))
-    .limit(1);
-  const nextOrder = (last[0]?.order ?? 0) + 1;
-
-  await db.insert(contentItems).values({
-    id: crypto.randomUUID(),
-    sectionId,
-    type: "pdf",
-    title,
-    content: publicUrl,
-    order: nextOrder,
-  });
-
-  redirect(`/courses/${sec.courseId}?tab=modules`);
-}
-
-export async function updateContentItemAction(formData: FormData) {
-  const itemId = (formData.get("itemId") as string | null)?.trim();
-  const title = (formData.get("title") as string | null)?.trim();
-  const type = (formData.get("type") as string | null)?.trim();
-  const content = (formData.get("content") as string | null)?.trim();
-  const redirectTo = (formData.get("redirectTo") as string | null)?.trim();
-
-  if (!itemId || !title || !type || !content) {
-    redirect("/courses/content?error=Missing%20fields");
-  }
-
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-
-  const db = await getDb();
-  const itemRow = await db
-    .select({
-      id: contentItems.id,
-      courseId: courses.id,
-      instructorId: courses.instructorId,
-    })
-    .from(contentItems)
-    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
-    .leftJoin(modules, eq(sections.moduleId, modules.id))
-    .leftJoin(courses, eq(modules.courseId, courses.id))
-    .where(eq(contentItems.id, itemId))
-    .limit(1);
-
-  const item = itemRow[0];
-  if (!item || !item.courseId) {
-    redirect("/courses/content?error=Content%20not%20found");
-  }
-
-  const isOwner = user.role === "instructor" && user.id === item.instructorId;
-  const isAdmin = user.role === "admin";
-  if (!isOwner && !isAdmin) {
-    redirect("/courses/content?error=Not%20authorized");
-  }
-
-  if (type !== "page" && type !== "link" && type !== "markdown") {
-    redirect("/courses/content?error=Invalid%20type");
-  }
-
-  await db
-    .update(contentItems)
-    .set({
-      title,
-      type,
-      content,
-    })
-    .where(eq(contentItems.id, itemId));
-
-  redirect(redirectTo || "/courses/content?notice=Content%20updated");
-}
-
-export async function updateReadHtmlActivityAction(formData: FormData) {
-  const itemId = (formData.get("itemId") as string | null)?.trim();
+async function updateReadActivityContent(
+  formData: FormData,
+  expectedFileType: "html" | "markdown",
+  notFoundMsg: string,
+) {
+  const activityId = (formData.get("activityId") as string | null)?.trim();
   const title = (formData.get("title") as string | null)?.trim();
   const content = formData.get("content") as string | null;
   const redirectTo = (formData.get("redirectTo") as string | null)?.trim();
 
-  if (!itemId || !title || content === null) {
+  if (!activityId || !title || content === null) {
     redirect("/dashboard?error=Missing%20fields");
   }
 
@@ -369,22 +197,22 @@ export async function updateReadHtmlActivityAction(formData: FormData) {
   const db = await getDb();
   const itemRow = await db
     .select({
-      id: contentItems.id,
-      type: contentItems.type,
-      contentPayload: contentItems.contentPayload,
+      id: activities.id,
+      type: activities.type,
+      contentPayload: activities.contentPayload,
       courseId: courses.id,
       instructorId: courses.instructorId,
     })
-    .from(contentItems)
-    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .from(activities)
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
     .leftJoin(modules, eq(sections.moduleId, modules.id))
     .leftJoin(courses, eq(modules.courseId, courses.id))
-    .where(eq(contentItems.id, itemId))
+    .where(eq(activities.id, activityId))
     .limit(1);
 
   const item = itemRow[0];
   if (!item || !item.courseId) {
-    redirect("/dashboard?error=Content%20not%20found");
+    redirect("/dashboard?error=Activity%20not%20found");
   }
 
   const isOwner = user.role === "instructor" && user.id === item.instructorId;
@@ -399,22 +227,30 @@ export async function updateReadHtmlActivityAction(formData: FormData) {
   } catch {
     payload = {};
   }
-  if (item.type !== "read" || payload.fileType !== "html") {
-    redirect(`/courses/${item.courseId}?error=Not%20an%20HTML%20Read%20activity`);
+  if (item.type !== "read" || payload.fileType !== expectedFileType) {
+    redirect(`/courses/${item.courseId}?error=${encodeURIComponent(notFoundMsg)}`);
   }
 
   await db
-    .update(contentItems)
+    .update(activities)
     .set({ title, content: content! })
-    .where(eq(contentItems.id, itemId));
+    .where(eq(activities.id, activityId));
 
-  redirect(redirectTo || `/courses/${item.courseId}?tab=modules&notice=Content%20updated`);
+  redirect(redirectTo || `/courses/${item.courseId}?tab=modules&notice=Activity%20updated`);
 }
 
-export async function deleteContentItemAction(formData: FormData) {
-  const itemId = (formData.get("itemId") as string | null)?.trim();
-  if (!itemId) {
-    redirect("/courses/content?error=Missing%20content%20item");
+export async function updateReadHtmlActivityAction(formData: FormData) {
+  await updateReadActivityContent(formData, "html", "Not an HTML Read activity");
+}
+
+export async function updateReadMarkdownActivityAction(formData: FormData) {
+  await updateReadActivityContent(formData, "markdown", "Not a Markdown Read activity");
+}
+
+export async function deleteActivityAction(formData: FormData) {
+  const activityId = (formData.get("activityId") as string | null)?.trim();
+  if (!activityId) {
+    redirect("/courses/content?error=Missing%20activity");
   }
 
   const user = await getCurrentUser();
@@ -423,20 +259,20 @@ export async function deleteContentItemAction(formData: FormData) {
   const db = await getDb();
   const itemRow = await db
     .select({
-      id: contentItems.id,
+      id: activities.id,
       courseId: courses.id,
       instructorId: courses.instructorId,
     })
-    .from(contentItems)
-    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .from(activities)
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
     .leftJoin(modules, eq(sections.moduleId, modules.id))
     .leftJoin(courses, eq(modules.courseId, courses.id))
-    .where(eq(contentItems.id, itemId))
+    .where(eq(activities.id, activityId))
     .limit(1);
 
   const item = itemRow[0];
   if (!item || !item.courseId) {
-    redirect("/courses/content?error=Content%20not%20found");
+    redirect("/courses/content?error=Activity%20not%20found");
   }
 
   const isOwner = user.role === "instructor" && user.id === item.instructorId;
@@ -445,8 +281,8 @@ export async function deleteContentItemAction(formData: FormData) {
     redirect("/courses/content?error=Not%20authorized");
   }
 
-  await db.delete(contentItems).where(eq(contentItems.id, itemId));
-  redirect("/courses/content?notice=Content%20deleted");
+  await db.delete(activities).where(eq(activities.id, activityId));
+  redirect(`/courses/${item.courseId}?tab=modules&notice=Activity%20deleted`);
 }
 
 // ─── Activity creation actions ────────────────────────────────────────────────
@@ -458,13 +294,11 @@ function extractYoutubeId(url: string): string | null {
     if (u.hostname.includes("youtube.com")) {
       const v = u.searchParams.get("v");
       if (v) return v;
-      // Handle /embed/ and /shorts/ URLs
       const parts = u.pathname.split("/");
       const idx = parts.findIndex((p) => p === "embed" || p === "shorts");
       if (idx !== -1 && parts[idx + 1]) return parts[idx + 1];
     }
   } catch {
-    // not a URL — treat as raw video ID
     if (/^[a-zA-Z0-9_-]{11}$/.test(url.trim())) return url.trim();
   }
   return null;
@@ -492,12 +326,12 @@ async function getSectionCourseOrRedirect(
   return { db, courseId: sec.courseId! };
 }
 
-async function nextItemOrder(db: Awaited<ReturnType<typeof getDb>>, sectionId: string) {
+async function nextActivityOrder(db: Awaited<ReturnType<typeof getDb>>, sectionId: string) {
   const last = await db
-    .select({ order: contentItems.order })
-    .from(contentItems)
-    .where(eq(contentItems.sectionId, sectionId))
-    .orderBy(desc(contentItems.order))
+    .select({ order: activities.order })
+    .from(activities)
+    .where(eq(activities.sectionId, sectionId))
+    .orderBy(desc(activities.order))
     .limit(1);
   return (last[0]?.order ?? 0) + 1;
 }
@@ -520,9 +354,9 @@ export async function createWatchActivityAction(formData: FormData) {
   }
 
   const { db, courseId } = await getSectionCourseOrRedirect(sectionId, user.id, user.role, "/dashboard");
-  const order = await nextItemOrder(db, sectionId);
+  const order = await nextActivityOrder(db, sectionId);
 
-  await db.insert(contentItems).values({
+  await db.insert(activities).values({
     id: crypto.randomUUID(),
     sectionId,
     type: "watch",
@@ -549,7 +383,7 @@ export async function uploadListenActivityAction(formData: FormData) {
     redirect("/dashboard?error=File%20must%20be%20an%20audio%20file%20(MP3%2C%20M4A%2C%20WAV%2C%20OGG)");
   }
 
-  const MAX_BYTES = 100 * 1024 * 1024; // 100 MB
+  const MAX_BYTES = 100 * 1024 * 1024;
   if (file.size > MAX_BYTES) {
     redirect("/dashboard?error=Audio%20file%20must%20be%20under%20100MB");
   }
@@ -564,9 +398,9 @@ export async function uploadListenActivityAction(formData: FormData) {
   const buffer = Buffer.from(await file.arrayBuffer());
   const audioUrl = await uploadFileToR2(buffer, key, file.type);
 
-  const order = await nextItemOrder(db, sectionId);
+  const order = await nextActivityOrder(db, sectionId);
 
-  await db.insert(contentItems).values({
+  await db.insert(activities).values({
     id: crypto.randomUUID(),
     sectionId,
     type: "listen",
@@ -588,7 +422,7 @@ export async function createReadActivityAction(formData: FormData) {
     redirect("/dashboard?error=Missing%20required%20fields");
   }
 
-  const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
+  const MAX_BYTES = 20 * 1024 * 1024;
   if (file.size > MAX_BYTES) {
     redirect("/dashboard?error=File%20must%20be%20under%2020MB");
   }
@@ -608,14 +442,14 @@ export async function createReadActivityAction(formData: FormData) {
   if (!user) redirect("/sign-in");
 
   const { db, courseId } = await getSectionCourseOrRedirect(sectionId, user.id, user.role, "/dashboard");
-  const order = await nextItemOrder(db, sectionId);
+  const order = await nextActivityOrder(db, sectionId);
 
   if (isPdf) {
     const key = `${courseId}/${sectionId}/${crypto.randomUUID()}.pdf`;
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileUrl = await uploadPdfToR2(buffer, key);
 
-    await db.insert(contentItems).values({
+    await db.insert(activities).values({
       id: crypto.randomUUID(),
       sectionId,
       type: "read",
@@ -625,9 +459,8 @@ export async function createReadActivityAction(formData: FormData) {
       order,
     });
   } else {
-    // Markdown — read as text, store inline
     const mdText = await file.text();
-    await db.insert(contentItems).values({
+    await db.insert(activities).values({
       id: crypto.randomUUID(),
       sectionId,
       type: "read",
@@ -665,11 +498,11 @@ export async function createWriteActivityAction(formData: FormData) {
   if (!user) redirect("/sign-in");
 
   const { db, courseId } = await getSectionCourseOrRedirect(sectionId, user.id, user.role, "/dashboard");
-  const order = await nextItemOrder(db, sectionId);
+  const order = await nextActivityOrder(db, sectionId);
 
   const activityId = crypto.randomUUID();
 
-  await db.insert(contentItems).values({
+  await db.insert(activities).values({
     id: activityId,
     sectionId,
     type: "write",
@@ -679,21 +512,16 @@ export async function createWriteActivityAction(formData: FormData) {
     order,
   });
 
-  // Auto-create linked assignment for submission/grading
-  const sectionRow = await db
-    .select({ moduleId: sections.moduleId })
-    .from(sections)
-    .where(eq(sections.id, sectionId))
-    .limit(1);
-
-  await db.insert(assignments).values({
+  // Auto-create the built-in open_ended assessment that captures the student response.
+  // The first open_ended assessment on a Write activity is the canonical submission target.
+  await db.insert(assessments).values({
     id: crypto.randomUUID(),
-    courseId,
-    sectionId,
+    activityId,
+    type: "open_ended",
     title,
     description: prompt,
-    type: "open_ended",
-    linkedActivityId: activityId,
+    graded: false,
+    order: 1,
   });
 
   redirect(`/courses/${courseId}?tab=modules`);
@@ -717,10 +545,9 @@ export async function submitWriteActivityAction(formData: FormData) {
 
   const db = await getDb();
 
-  // Validate character limits from activity payload
-  const activity = await db.query.contentItems.findFirst({
+  const activity = await db.query.activities.findFirst({
     columns: { id: true, contentPayload: true },
-    where: (ci, { eq }) => eq(ci.id, activityId),
+    where: (a, { eq }) => eq(a.id, activityId),
   });
 
   if (!activity) redirect(`/courses/${courseId}?error=Activity%20not%20found`);
@@ -736,39 +563,48 @@ export async function submitWriteActivityAction(formData: FormData) {
     redirect(`/courses/${courseId}/activities/${activityId}?error=Response%20must%20be%20at%20most%20${maxChars}%20characters`);
   }
 
-  // Find the linked assignment
-  const assignmentRow = await db
-    .select({ id: assignments.id })
-    .from(assignments)
-    .where(eq(assignments.linkedActivityId, activityId))
+  // The Write activity's built-in submission target is the first open_ended assessment.
+  const assessmentRow = await db
+    .select({ id: assessments.id })
+    .from(assessments)
+    .where(eq(assessments.activityId, activityId))
+    .orderBy(asc(assessments.order))
     .limit(1);
 
-  if (!assignmentRow[0]) redirect(`/courses/${courseId}/activities/${activityId}?error=Assignment%20not%20found`);
+  if (!assessmentRow[0]) {
+    redirect(`/courses/${courseId}/activities/${activityId}?error=Built-in%20assessment%20missing`);
+  }
+  const assessmentId = assessmentRow[0].id;
 
-  const assignmentId = assignmentRow[0].id;
-
-  // Ensure user is enrolled
   const enrollment = await db.query.enrollments.findFirst({
     columns: { id: true },
     where: (e, { and, eq }) => and(eq(e.courseId, courseId), eq(e.userId, user.id)),
   });
   if (!enrollment) redirect(`/courses/${courseId}?error=Not%20enrolled`);
 
-  const { submissions } = await import("@/lib/schema");
   const now = new Date();
   await db
     .insert(submissions)
     .values({
       id: crypto.randomUUID(),
-      assignmentId,
+      assessmentId,
       userId: user.id,
       submissionText: submissionText || null,
       submittedAt: now,
     })
     .onConflictDoUpdate({
-      target: [submissions.assignmentId, submissions.userId],
+      target: [submissions.assessmentId, submissions.userId],
       set: { submissionText: submissionText || null, submittedAt: now },
     });
+
+  await db
+    .insert(completions)
+    .values({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      activityId,
+    })
+    .onConflictDoNothing();
 
   redirect(`/courses/${courseId}/activities/${activityId}?notice=Response%20saved`);
 }

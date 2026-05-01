@@ -19,7 +19,7 @@ import { join } from "path";
 config({ path: ".env.local" });
 
 // Import schema types
-import { courses, modules, sections, contentItems } from "../lib/schema";
+import { courses, modules, sections, activities } from "../lib/schema";
 
 interface NormalizedBlock {
   type: string;
@@ -104,9 +104,9 @@ async function main() {
 
   if (existingModules.length > 0) {
     console.log(`WARNING: Course already has ${existingModules.length} modules`);
-    console.log("Deleting existing modules and content items...");
+    console.log("Deleting existing modules and activities...");
 
-    // Delete existing modules (content items will cascade)
+    // Delete existing modules (activities will cascade)
     for (const mod of existingModules) {
       await db.delete(modules).where(eq(modules.id, mod.id));
     }
@@ -136,7 +136,7 @@ async function main() {
 
     console.log(`  Created module: ${moduleTitle}`);
 
-    // Create sections and their content items
+    // Create sections and their activities
     for (const [sectionIndex, section] of chapter.sections.entries()) {
       const sectionId = crypto.randomUUID();
       const sectionTitle = `${section.section_number} ${section.title}`;
@@ -147,13 +147,13 @@ async function main() {
         order: sectionIndex + 1,
         sourceRef: section.section_number,
       });
-      await db.insert(contentItems).values({
+      await db.insert(activities).values({
         id: crypto.randomUUID(),
         sectionId,
-        type: "normalized_text",
+        type: "read",
         title: sectionTitle,
         content: "",
-        contentPayload: JSON.stringify(section.blocks),
+        contentPayload: JSON.stringify({ fileType: "normalized", blocks: section.blocks }),
         sourceRef: section.section_number,
         order: 1,
       });
@@ -166,7 +166,7 @@ async function main() {
   console.log("\n=== IMPORT COMPLETE ===");
   console.log(`Course: ${course.title}`);
   console.log(`Modules created: ${data.chapters.length}`);
-  console.log(`Content items created: ${totalSections}`);
+  console.log(`Activities created: ${totalSections}`);
 }
 
 main().catch((err) => {

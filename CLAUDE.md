@@ -103,3 +103,15 @@ Requires `DATABASE_URL` (Neon PostgreSQL) and Clerk env vars (`NEXT_PUBLIC_CLERK
 - Query params for messages: `?error=` or `?notice=`
 - Server Components by default; mutations via Server Actions
 - Use `cn()` from `lib/utils.ts` for Tailwind class merging
+
+## Workflows
+
+### After every commit + push
+Update `CHANGELOG.md` with a new entry summarizing what shipped. Follow the existing format:
+- Group under a date heading (`## YYYY-MM-DD`) — add a new date heading if today's doesn't exist yet, otherwise append a new `###` subsection under the existing one
+- `###` section title describing the feature/change
+- Bullet list of what changed (user-facing + notable technical details)
+- `**Files created:**` / `**Files modified:**` / `**Files deleted:**` lists as applicable
+- Include schema changes, new env vars, or migration notes when relevant
+
+Update the file only — leave it uncommitted unless the user asks to commit it. Do not amend the feature commit.

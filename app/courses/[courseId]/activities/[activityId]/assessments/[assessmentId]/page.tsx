@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-
 import Link from "next/link";
 import { and, asc, eq } from "drizzle-orm";
 
@@ -8,47 +7,69 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { gradeSubmissionAction, submitAssignmentAction } from "@/lib/assignment-actions";
+import { gradeSubmissionAction, submitAssessmentAction } from "@/lib/assessment-actions";
 import { submitMcqAction } from "@/lib/mcq-submit-actions";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { assignments, courses, grades, mcqQuestions, submissions, users } from "@/lib/schema";
+import {
+  activities,
+  assessments,
+  courses,
+  grades,
+  mcqQuestions,
+  modules,
+  sections,
+  submissions,
+  users,
+} from "@/lib/schema";
 
-type AssignmentPageProps = {
-  params: Promise<{ courseId: string; assignmentId: string }>;
+type AssessmentPageProps = {
+  params: Promise<{ courseId: string; activityId: string; assessmentId: string }>;
 };
 
-export default async function AssignmentPage(props: AssignmentPageProps) {
-  const { courseId, assignmentId } = (await props.params) || {};
-  if (!courseId || !assignmentId) notFound();
+export default async function AssessmentPage(props: AssessmentPageProps) {
+  const { courseId, activityId, assessmentId } = (await props.params) || {};
+  if (!courseId || !activityId || !assessmentId) notFound();
 
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
   const db = await getDb();
-  const assignmentRow = await db
+  const assessmentRow = await db
     .select({
-      assignmentId: assignments.id,
-      title: assignments.title,
-      description: assignments.description,
-      type: assignments.type,
-      mcqModel: assignments.mcqModel,
-      dueAt: assignments.dueAt,
+      assessmentId: assessments.id,
+      title: assessments.title,
+      description: assessments.description,
+      type: assessments.type,
+      mcqModel: assessments.mcqModel,
+      graded: assessments.graded,
+      dueAt: assessments.dueAt,
+      activityId: activities.id,
+      activityTitle: activities.title,
       courseId: courses.id,
       courseTitle: courses.title,
       instructorId: courses.instructorId,
     })
-    .from(assignments)
-    .leftJoin(courses, eq(assignments.courseId, courses.id))
-    .where(and(eq(assignments.id, assignmentId), eq(assignments.courseId, courseId)))
+    .from(assessments)
+    .leftJoin(activities, eq(assessments.activityId, activities.id))
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(
+      and(
+        eq(assessments.id, assessmentId),
+        eq(activities.id, activityId),
+        eq(courses.id, courseId)
+      )
+    )
     .limit(1);
 
-  const assignment = assignmentRow[0];
-  if (!assignment) notFound();
+  const assessment = assessmentRow[0];
+  if (!assessment) notFound();
 
-  const isOwner = user.role === "instructor" && user.id === assignment.instructorId;
+  const isOwner = user.role === "instructor" && user.id === assessment.instructorId;
   const isAdmin = user.role === "admin";
-  const isMcq = assignment.type === "mcq";
+  const isMcq = assessment.type === "mcq";
 
   let isEnrolled = false;
   if (user.role === "learner") {
@@ -63,19 +84,18 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
     redirect("/dashboard?error=Not%20enrolled%20in%20this%20course");
   }
 
-  // Load MCQ questions for this assignment if applicable
   const questions = isMcq
     ? await db
         .select()
         .from(mcqQuestions)
-        .where(eq(mcqQuestions.assignmentId, assignmentId))
+        .where(eq(mcqQuestions.assessmentId, assessmentId))
         .orderBy(asc(mcqQuestions.order))
     : [];
 
   const learnerSubmission =
     user.role === "learner"
       ? await db.query.submissions.findFirst({
-          where: (s, { and, eq }) => and(eq(s.assignmentId, assignmentId), eq(s.userId, user.id)),
+          where: (s, { and, eq }) => and(eq(s.assessmentId, assessmentId), eq(s.userId, user.id)),
         })
       : null;
   const learnerGrade =
@@ -85,7 +105,6 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
         })
       : null;
 
-  // Parse stored MCQ answers for display
   const learnerAnswers: Record<string, number> =
     learnerSubmission?.mcqAnswers ? JSON.parse(learnerSubmission.mcqAnswers) : {};
 
@@ -106,27 +125,35 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
           .from(submissions)
           .leftJoin(users, eq(submissions.userId, users.id))
           .leftJoin(grades, eq(grades.submissionId, submissions.id))
-          .where(eq(submissions.assignmentId, assignmentId))
+          .where(eq(submissions.assessmentId, assessmentId))
       : [];
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-          {isMcq ? "Quiz" : "Assignment"}
+          {isMcq ? "Quiz" : "Assessment"}
+          {assessment.graded ? " · Graded" : " · Formative"}
         </p>
-        <h1 className="text-3xl font-semibold text-foreground">{assignment.title}</h1>
+        <h1 className="text-3xl font-semibold text-foreground">{assessment.title}</h1>
         <p className="text-sm text-muted-foreground">
-          Course:{" "}
+          Activity:{" "}
+          <Link
+            className="text-foreground underline"
+            href={`/courses/${courseId}/activities/${activityId}`}
+          >
+            {assessment.activityTitle}
+          </Link>{" "}
+          · Course:{" "}
           <Link className="text-foreground underline" href={`/courses/${courseId}`}>
-            {assignment.courseTitle}
+            {assessment.courseTitle}
           </Link>
         </p>
-        {assignment.dueAt && (() => {
-          const overdue = assignment.dueAt! < new Date();
+        {assessment.dueAt && (() => {
+          const overdue = assessment.dueAt! < new Date();
           return (
             <p className={`text-sm font-medium ${overdue ? "text-red-600" : "text-muted-foreground"}`}>
-              Due: {assignment.dueAt!.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Due: {assessment.dueAt!.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
               {overdue ? " — Overdue" : ""}
             </p>
           );
@@ -134,22 +161,19 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
       </div>
 
       <div className="space-y-4 rounded-2xl border border-border/70 bg-card/80 p-4">
-        {/* Description / prompt */}
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {isMcq ? "About this quiz" : "Prompt"}
           </p>
-          {assignment.description ? (
-            <p className="whitespace-pre-wrap text-sm text-foreground">{assignment.description}</p>
+          {assessment.description ? (
+            <p className="whitespace-pre-wrap text-sm text-foreground">{assessment.description}</p>
           ) : (
             <p className="text-sm text-muted-foreground">No description provided.</p>
           )}
         </div>
 
-        {/* Learner view */}
         {user.role === "learner" ? (
           isMcq ? (
-            /* ── MCQ quiz UI ── */
             <div className="space-y-4 rounded-lg border border-border/60 bg-background/80 p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-foreground">Your answers</p>
@@ -170,7 +194,7 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
               ) : null}
 
               <form action={submitMcqAction} className="space-y-6">
-                <input type="hidden" name="assignmentId" value={assignmentId} />
+                <input type="hidden" name="assessmentId" value={assessmentId} />
                 {questions.map((q, i) => {
                   const opts: string[] = JSON.parse(q.options);
                   const chosen = learnerAnswers[q.id];
@@ -225,7 +249,6 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
               </form>
             </div>
           ) : (
-            /* ── Open-ended submission UI (unchanged) ── */
             <div className="space-y-3 rounded-lg border border-border/60 bg-background/80 p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-foreground">Your submission</p>
@@ -262,8 +285,8 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
                   </p>
                 </div>
               ) : null}
-              <form action={submitAssignmentAction} className="space-y-3">
-                <input type="hidden" name="assignmentId" value={assignmentId} />
+              <form action={submitAssessmentAction} className="space-y-3">
+                <input type="hidden" name="assessmentId" value={assessmentId} />
                 <div className="space-y-1">
                   <Label htmlFor="submission-text">Submission text</Label>
                   <Textarea
@@ -285,21 +308,19 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
                   />
                 </div>
                 <Button type="submit">
-                  {learnerSubmission ? "Update submission" : "Submit assignment"}
+                  {learnerSubmission ? "Update submission" : "Submit"}
                 </Button>
               </form>
             </div>
           )
         ) : null}
 
-        {/* MCQ model attribution */}
-        {(isAdmin || isOwner) && isMcq && assignment.mcqModel ? (
+        {(isAdmin || isOwner) && isMcq && assessment.mcqModel ? (
           <p className="text-xs text-muted-foreground">
-            Generated by <span className="font-mono">{assignment.mcqModel}</span>
+            Generated by <span className="font-mono">{assessment.mcqModel}</span>
           </p>
         ) : null}
 
-        {/* Instructor / admin question preview */}
         {(isAdmin || isOwner) && isMcq && questions.length > 0 ? (
           <div className="space-y-3">
             <p className="text-sm font-semibold text-foreground">
@@ -336,7 +357,6 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
           </div>
         ) : null}
 
-        {/* Instructor / admin submissions list */}
         {isAdmin || isOwner ? (
           <div className="space-y-2">
             <p className="text-sm font-semibold text-foreground">
@@ -368,10 +388,10 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
                           ) : null}
                         </div>
                       </div>
-                    ) : !isMcq && isOwner ? (
+                    ) : !isMcq && isOwner && assessment.graded ? (
                       <form action={gradeSubmissionAction} className="space-y-2 rounded-md border border-border/60 bg-card/70 px-3 py-2">
                         <input type="hidden" name="submissionId" value={sub.id} />
-                        <input type="hidden" name="assignmentId" value={assignmentId} />
+                        <input type="hidden" name="assessmentId" value={assessmentId} />
                         <div className="flex items-center justify-between gap-3">
                           <Label htmlFor={`grade-${sub.id}`}>Grade (0-100)</Label>
                           <Input
@@ -388,7 +408,9 @@ export default async function AssignmentPage(props: AssignmentPageProps) {
                         <Button type="submit" className="w-full">Save grade</Button>
                       </form>
                     ) : (
-                      <p className="text-xs text-muted-foreground">Not graded yet.</p>
+                      <p className="text-xs text-muted-foreground">
+                        {assessment.graded ? "Not graded yet." : "Formative — no grade."}
+                      </p>
                     )}
                     {sub.submissionText ? (
                       <p className="whitespace-pre-wrap text-foreground">{sub.submissionText}</p>

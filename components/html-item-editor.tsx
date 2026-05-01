@@ -128,7 +128,7 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
           </div>
 
           <form action={updateReadHtmlActivityAction} className="space-y-3">
-            <input type="hidden" name="itemId" value={itemId} />
+            <input type="hidden" name="activityId" value={itemId} />
             <input type="hidden" name="redirectTo" value={redirectTo} />
 
             <div className="space-y-1">

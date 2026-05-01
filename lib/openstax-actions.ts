@@ -6,7 +6,7 @@ import { and, desc, eq, inArray, like } from "drizzle-orm";
 import { getCurrentUser, requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import {
-  contentItems,
+  activities,
   courses,
   modules,
   openstaxBooks,
@@ -256,14 +256,14 @@ export async function importOpenstaxSectionAsReadActivityAction(formData: FormDa
   }
 
   const last = await db
-    .select({ order: contentItems.order })
-    .from(contentItems)
-    .where(eq(contentItems.sectionId, sectionId))
-    .orderBy(desc(contentItems.order))
+    .select({ order: activities.order })
+    .from(activities)
+    .where(eq(activities.sectionId, sectionId))
+    .orderBy(desc(activities.order))
     .limit(1);
   const order = (last[0]?.order ?? 0) + 1;
 
-  await db.insert(contentItems).values({
+  await db.insert(activities).values({
     id: crypto.randomUUID(),
     sectionId,
     type: "read",

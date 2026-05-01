@@ -9,16 +9,19 @@ import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import {
-  contentItems,
+  activities,
   modules,
   sections,
   completions,
-  assignments,
+  assessments,
   submissions,
   announcements,
   users,
+  openstaxBooks,
+  openstaxChapters,
+  openstaxSections,
 } from "@/lib/schema";
-import { and, desc, eq, inArray, like, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, like, sql } from "drizzle-orm";
 import {
   createModuleAction,
   createSectionAction,
@@ -27,13 +30,11 @@ import {
   createReadActivityAction,
   createWriteActivityAction,
 } from "@/lib/module-actions";
-import { createAssignmentAction } from "@/lib/assignment-actions";
 import { createAnnouncementAction, deleteAnnouncementAction } from "@/lib/announcement-actions";
 import {
   importOpenstaxBookToCourseAction,
   importOpenstaxSectionAsReadActivityAction,
 } from "@/lib/openstax-actions";
-import { openstaxBooks, openstaxChapters, openstaxSections } from "@/lib/schema";
 import { CourseTabs } from "./_components/course-tabs";
 
 type CoursePageProps = {
@@ -113,19 +114,19 @@ export default async function CourseDetailPage(props: CoursePageProps) {
 
   const sectionIds = sectionRows.map((s) => s.id);
 
-  const itemRows =
+  const activityRows =
     sectionIds.length > 0
       ? await db
           .select({
-            id: contentItems.id,
-            sectionId: contentItems.sectionId,
-            title: contentItems.title,
-            type: contentItems.type,
-            order: contentItems.order,
+            id: activities.id,
+            sectionId: activities.sectionId,
+            title: activities.title,
+            type: activities.type,
+            order: activities.order,
           })
-          .from(contentItems)
-          .where(inArray(contentItems.sectionId, sectionIds))
-          .orderBy(contentItems.order)
+          .from(activities)
+          .where(inArray(activities.sectionId, sectionIds))
+          .orderBy(activities.order)
       : [];
 
   const sectionsByModule = moduleIds.reduce<Record<string, typeof sectionRows>>((acc, id) => {
@@ -133,78 +134,99 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     return acc;
   }, {});
 
-  const itemsBySection = sectionIds.reduce<Record<string, typeof itemRows>>((acc, id) => {
-    acc[id] = itemRows.filter((item) => item.sectionId === id);
+  const activitiesBySection = sectionIds.reduce<Record<string, typeof activityRows>>((acc, id) => {
+    acc[id] = activityRows.filter((a) => a.sectionId === id);
     return acc;
   }, {});
 
-  const assignmentRows = await db
-    .select({
-      id: assignments.id,
-      title: assignments.title,
-      description: assignments.description,
-      sectionId: assignments.sectionId,
-      dueAt: assignments.dueAt,
-      createdAt: assignments.createdAt,
-    })
-    .from(assignments)
-    .where(eq(assignments.courseId, courseId))
-    .orderBy(assignments.createdAt);
+  const activityIds = activityRows.map((a) => a.id);
+
+  const assessmentRows =
+    activityIds.length > 0
+      ? await db
+          .select({
+            id: assessments.id,
+            activityId: assessments.activityId,
+            title: assessments.title,
+            description: assessments.description,
+            type: assessments.type,
+            graded: assessments.graded,
+            dueAt: assessments.dueAt,
+            order: assessments.order,
+          })
+          .from(assessments)
+          .where(inArray(assessments.activityId, activityIds))
+          .orderBy(asc(assessments.order))
+      : [];
+
+  // For each Write activity, the first open_ended assessment by order is the
+  // built-in submission target — hide it from listings.
+  const builtInWriteAssessmentIds = new Set<string>();
+  for (const activity of activityRows) {
+    if (activity.type !== "write") continue;
+    const builtIn = assessmentRows
+      .filter((a) => a.activityId === activity.id && a.type === "open_ended")
+      .sort((a, b) => a.order - b.order)[0];
+    if (builtIn) builtInWriteAssessmentIds.add(builtIn.id);
+  }
+
+  const visibleAssessments = assessmentRows.filter((a) => !builtInWriteAssessmentIds.has(a.id));
 
   const learnerSubmissionSet =
-    user.role === "learner" && assignmentRows.length
+    user.role === "learner" && visibleAssessments.length
       ? new Set(
           (
             await db
-              .select({ assignmentId: submissions.assignmentId })
+              .select({ assessmentId: submissions.assessmentId })
               .from(submissions)
               .where(
                 and(
                   eq(submissions.userId, user.id),
                   inArray(
-                    submissions.assignmentId,
-                    assignmentRows.map((a) => a.id)
+                    submissions.assessmentId,
+                    visibleAssessments.map((a) => a.id)
                   )
                 )
               )
-          ).map((row) => row.assignmentId)
+          ).map((row) => row.assessmentId)
         )
       : new Set<string>();
 
   const submissionCounts =
-    (isAdmin || isOwner) && assignmentRows.length
+    canEdit && visibleAssessments.length
       ? await db
           .select({
-            assignmentId: submissions.assignmentId,
+            assessmentId: submissions.assessmentId,
             count: sql<number>`count(*)`,
           })
           .from(submissions)
-          .where(inArray(submissions.assignmentId, assignmentRows.map((a) => a.id)))
-          .groupBy(submissions.assignmentId)
+          .where(inArray(submissions.assessmentId, visibleAssessments.map((a) => a.id)))
+          .groupBy(submissions.assessmentId)
       : [];
   const submissionCountMap = new Map<string, number>(
-    submissionCounts.map((s) => [s.assignmentId, Number(s.count || 0)])
+    submissionCounts.map((s) => [s.assessmentId, Number(s.count || 0)])
   );
 
   const learnerCompletionSet =
-    user.role === "learner" && itemRows.length
+    user.role === "learner" && activityRows.length
       ? new Set(
           (
             await db
-              .select({ contentItemId: completions.contentItemId })
+              .select({ activityId: completions.activityId })
               .from(completions)
               .where(
                 and(
                   eq(completions.userId, user.id),
-                  inArray(completions.contentItemId, itemRows.map((i) => i.id))
+                  inArray(completions.activityId, activityRows.map((a) => a.id))
                 )
               )
-          ).map((c) => c.contentItemId)
+          ).map((c) => c.activityId)
         )
       : new Set<string>();
 
-  // Build a lookup from sectionId → section title for assignment display
+  // Lookup helpers for display
   const sectionTitleById = Object.fromEntries(sectionRows.map((s) => [s.id, s.title]));
+  const activityById = new Map(activityRows.map((a) => [a.id, a]));
 
   // Announcements (newest first, with author email)
   const announcementRows = await db
@@ -257,17 +279,17 @@ export default async function CourseDetailPage(props: CoursePageProps) {
       : new Set<string>();
 
   // Learner progress totals
-  const courseItemTotal = itemRows.length;
-  const courseItemCompleted = user.role === "learner" ? learnerCompletionSet.size : 0;
+  const courseActivityTotal = activityRows.length;
+  const courseActivityCompleted = user.role === "learner" ? learnerCompletionSet.size : 0;
 
   // Per-module progress for learners
   const moduleProgressMap = new Map(
     moduleRows.map((mod) => {
-      const modItems = (sectionsByModule[mod.id] ?? []).flatMap((s) => itemsBySection[s.id] ?? []);
+      const modActivities = (sectionsByModule[mod.id] ?? []).flatMap((s) => activitiesBySection[s.id] ?? []);
       const completed = user.role === "learner"
-        ? modItems.filter((item) => learnerCompletionSet.has(item.id)).length
+        ? modActivities.filter((a) => learnerCompletionSet.has(a.id)).length
         : 0;
-      return [mod.id, { total: modItems.length, completed }];
+      return [mod.id, { total: modActivities.length, completed }];
     })
   );
 
@@ -283,16 +305,16 @@ export default async function CourseDetailPage(props: CoursePageProps) {
             {course.description || "No description provided."}
           </p>
         </div>
-        {user.role === "learner" && courseItemTotal > 0 && (
+        {user.role === "learner" && courseActivityTotal > 0 && (
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-slate-500">
               <span>Your progress</span>
-              <span className="tabular-nums">{courseItemCompleted} / {courseItemTotal} activities</span>
+              <span className="tabular-nums">{courseActivityCompleted} / {courseActivityTotal} activities</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
               <div
                 className="h-full rounded-full bg-teal-500 transition-all"
-                style={{ width: `${Math.round((courseItemCompleted / courseItemTotal) * 100)}%` }}
+                style={{ width: `${Math.round((courseActivityCompleted / courseActivityTotal) * 100)}%` }}
               />
             </div>
           </div>
@@ -328,8 +350,8 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                   {moduleRows.map((mod) => {
                     const modSections = sectionsByModule[mod.id] || [];
                     const sectionCount = modSections.length;
-                    const itemCount = modSections.reduce(
-                      (sum, s) => sum + (itemsBySection[s.id]?.length ?? 0),
+                    const activityCount = modSections.reduce(
+                      (sum, s) => sum + (activitiesBySection[s.id]?.length ?? 0),
                       0
                     );
                     const prog = moduleProgressMap.get(mod.id);
@@ -338,7 +360,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                         <div className="flex justify-between">
                           <span className="text-foreground">{mod.title}</span>
                           <span className="text-muted-foreground">
-                            {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {itemCount} {itemCount === 1 ? "activity" : "activities"}
+                            {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {activityCount} {activityCount === 1 ? "activity" : "activities"}
                           </span>
                         </div>
                         {user.role === "learner" && prog && prog.total > 0 && (
@@ -364,29 +386,34 @@ export default async function CourseDetailPage(props: CoursePageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Assignments</CardTitle>
-              <CardDescription>{assignmentRows.length} assignments in this course</CardDescription>
+              <CardTitle>Assessments</CardTitle>
+              <CardDescription>
+                {visibleAssessments.length} {visibleAssessments.length === 1 ? "assessment" : "assessments"} attached to activities
+              </CardDescription>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              {assignmentRows.length === 0 ? (
-                <p>No assignments yet.</p>
+              {visibleAssessments.length === 0 ? (
+                <p>No assessments yet.</p>
               ) : (
                 <ul className="space-y-1">
-                  {assignmentRows.map((assignment) => (
-                    <li key={assignment.id}>
-                      <a
-                        href={`/courses/${courseId}/assignments/${assignment.id}`}
-                        className="text-foreground underline"
-                      >
-                        {assignment.title}
-                      </a>
-                      {assignment.sectionId && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          — {sectionTitleById[assignment.sectionId] ?? ""}
-                        </span>
-                      )}
-                    </li>
-                  ))}
+                  {visibleAssessments.map((a) => {
+                    const activity = activityById.get(a.activityId);
+                    return (
+                      <li key={a.id}>
+                        <a
+                          href={`/courses/${courseId}/activities/${a.activityId}/assessments/${a.id}`}
+                          className="text-foreground underline"
+                        >
+                          {a.title}
+                        </a>
+                        {activity && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            — {activity.title}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </CardContent>
@@ -436,7 +463,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                       ) : (
                         <div className="space-y-3">
                           {modSections.map((sec) => {
-                            const items = itemsBySection[sec.id] || [];
+                            const items = activitiesBySection[sec.id] || [];
                             const completedCount =
                               user.role === "learner"
                                 ? items.filter((item) => learnerCompletionSet.has(item.id)).length
@@ -660,41 +687,49 @@ export default async function CourseDetailPage(props: CoursePageProps) {
         </div>
       )}
 
-      {tab === "assignments" && (
+      {tab === "assessments" && (
         <div className="space-y-4">
-          {assignmentRows.length === 0 ? (
+          {visibleAssessments.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                No assignments yet.{canEdit ? " Create your first assignment below." : ""}
+                No assessments yet. Add an assessment from any activity page.
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-2">
-              {assignmentRows.map((assignment) => {
-                const learnerSubmitted = learnerSubmissionSet.has(assignment.id);
-                const submissionCount = submissionCountMap.get(assignment.id) || 0;
+              {visibleAssessments.map((a) => {
+                const learnerSubmitted = learnerSubmissionSet.has(a.id);
+                const submissionCount = submissionCountMap.get(a.id) || 0;
+                const activity = activityById.get(a.activityId);
                 return (
-                  <Card key={assignment.id}>
+                  <Card key={a.id}>
                     <CardContent className="flex items-start justify-between p-4">
                       <div className="space-y-1">
                         <a
                           className="text-sm font-semibold text-foreground underline"
-                          href={`/courses/${courseId}/assignments/${assignment.id}`}
+                          href={`/courses/${courseId}/activities/${a.activityId}/assessments/${a.id}`}
                         >
-                          {assignment.title}
+                          {a.title}
                         </a>
-                        {assignment.description && (
-                          <p className="text-xs text-muted-foreground">{assignment.description}</p>
+                        {a.description && (
+                          <p className="text-xs text-muted-foreground">{a.description}</p>
                         )}
-                        {assignment.sectionId && (
+                        {activity && (
                           <p className="text-[11px] text-muted-foreground">
-                            Section: {sectionTitleById[assignment.sectionId] ?? ""}
+                            Activity: {activity.title}
+                            {activity.sectionId && sectionTitleById[activity.sectionId]
+                              ? ` — ${sectionTitleById[activity.sectionId]}`
+                              : ""}
                           </p>
                         )}
-                        {assignment.dueAt && (
-                          <p className={`text-[11px] font-medium ${assignment.dueAt < new Date() ? "text-red-600" : "text-muted-foreground"}`}>
-                            Due: {assignment.dueAt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                            {assignment.dueAt < new Date() ? " — Overdue" : ""}
+                        <p className="text-[11px] text-muted-foreground">
+                          {a.type === "mcq" ? "Multiple choice" : "Open-ended"}
+                          {a.graded ? " • Graded" : " • Formative"}
+                        </p>
+                        {a.dueAt && (
+                          <p className={`text-[11px] font-medium ${a.dueAt < new Date() ? "text-red-600" : "text-muted-foreground"}`}>
+                            Due: {a.dueAt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            {a.dueAt < new Date() ? " — Overdue" : ""}
                           </p>
                         )}
                       </div>
@@ -704,57 +739,13 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                             {learnerSubmitted ? "Submitted" : "Not submitted"}
                           </span>
                         )}
-                        {(isAdmin || isOwner) && <span>{submissionCount} submissions</span>}
+                        {canEdit && <span>{submissionCount} submissions</span>}
                       </div>
                     </CardContent>
                   </Card>
                 );
               })}
             </div>
-          )}
-
-          {canEdit && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Create Assignment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form action={createAssignmentAction} className="space-y-3">
-                  <input type="hidden" name="courseId" value={courseId} />
-                  <div className="space-y-1">
-                    <Label htmlFor="assignment-section">Section</Label>
-                    <select
-                      id="assignment-section"
-                      name="sectionId"
-                      className="flex h-7 w-full rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
-                      defaultValue=""
-                    >
-                      <option value="">No section</option>
-                      {moduleRows.map((mod) =>
-                        (sectionsByModule[mod.id] || []).map((sec) => (
-                          <option key={sec.id} value={sec.id}>
-                            {mod.title} › {sec.title}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="assignment-title">Assignment title</Label>
-                    <Input id="assignment-title" name="title" required />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="assignment-description">Description / prompt</Label>
-                    <Textarea id="assignment-description" name="description" rows={3} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="assignment-due">Due date (optional)</Label>
-                    <Input id="assignment-due" name="dueAt" type="datetime-local" />
-                  </div>
-                  <Button type="submit">Create assignment</Button>
-                </form>
-              </CardContent>
-            </Card>
           )}
         </div>
       )}

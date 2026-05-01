@@ -12,7 +12,7 @@ type CourseTabsProps = {
 const tabs = [
   { key: "overview", label: "Overview" },
   { key: "modules", label: "Modules" },
-  { key: "assignments", label: "Assignments" },
+  { key: "assessments", label: "Assessments" },
   { key: "announcements", label: "Announcements" },
 ];
 

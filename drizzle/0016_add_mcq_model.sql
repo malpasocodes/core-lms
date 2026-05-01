@@ -1,1 +1,0 @@
-ALTER TABLE assignments ADD COLUMN IF NOT EXISTS mcq_model TEXT;

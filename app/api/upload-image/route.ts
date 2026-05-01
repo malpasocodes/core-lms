@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { uploadFileToR2 } from "@/lib/r2";
-import { contentItems, courses, modules, sections } from "@/lib/schema";
+import { activities, courses, modules, sections } from "@/lib/schema";
 
 const ALLOWED_TYPES = new Set(["image/png", "image/jpeg"]);
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -34,16 +34,16 @@ export async function POST(request: Request) {
   const db = await getDb();
   const itemRow = await db
     .select({
-      id: contentItems.id,
-      sectionId: contentItems.sectionId,
+      id: activities.id,
+      sectionId: activities.sectionId,
       courseId: courses.id,
       instructorId: courses.instructorId,
     })
-    .from(contentItems)
-    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .from(activities)
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
     .leftJoin(modules, eq(sections.moduleId, modules.id))
     .leftJoin(courses, eq(modules.courseId, courses.id))
-    .where(eq(contentItems.id, activityId))
+    .where(eq(activities.id, activityId))
     .limit(1);
 
   const item = itemRow[0];

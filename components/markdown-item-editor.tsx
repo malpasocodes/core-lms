@@ -6,7 +6,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { Button } from "@/components/ui/button";
-import { updateContentItemAction } from "@/lib/module-actions";
+import { updateReadMarkdownActivityAction } from "@/lib/module-actions";
 
 type Mode = "preview" | "edit";
 
@@ -24,7 +24,6 @@ export function MarkdownItemEditor({ itemId, initialTitle, initialContent, redir
 
   return (
     <div className="space-y-4">
-      {/* Mode toggle */}
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -50,7 +49,6 @@ export function MarkdownItemEditor({ itemId, initialTitle, initialContent, redir
         </button>
       </div>
 
-      {/* Preview pane */}
       {mode === "preview" && (
         <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
           <div className="prose prose-neutral dark:prose-invert max-w-none">
@@ -59,11 +57,9 @@ export function MarkdownItemEditor({ itemId, initialTitle, initialContent, redir
         </div>
       )}
 
-      {/* Edit pane */}
       {mode === "edit" && (
-        <form action={updateContentItemAction} className="space-y-3">
-          <input type="hidden" name="itemId" value={itemId} />
-          <input type="hidden" name="type" value="markdown" />
+        <form action={updateReadMarkdownActivityAction} className="space-y-3">
+          <input type="hidden" name="activityId" value={itemId} />
           <input type="hidden" name="redirectTo" value={redirectTo} />
 
           <div className="space-y-1">

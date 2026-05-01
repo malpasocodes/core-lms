@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { courses, modules, sections, contentItems } from "@/lib/schema";
+import { activities, courses, modules, sections } from "@/lib/schema";
 import { requireAdmin } from "@/lib/auth";
 
 interface NormalizedSource {
@@ -91,13 +91,13 @@ export async function ingestNormalizedCourseAction(formData: FormData) {
         sourceRef: section.section_number,
       });
 
-      await db.insert(contentItems).values({
+      await db.insert(activities).values({
         id: crypto.randomUUID(),
         sectionId,
-        type: "normalized_text",
+        type: "read",
         title: `${section.section_number} ${section.title}`,
         content: "",
-        contentPayload: JSON.stringify(section.blocks),
+        contentPayload: JSON.stringify({ fileType: "normalized", blocks: section.blocks }),
         sourceRef: section.section_number,
         order: 1,
       });

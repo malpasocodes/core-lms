@@ -2,11 +2,11 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { assignments, contentItems, courses, mcqQuestions, modules, sections } from "@/lib/schema";
+import { activities, assessments, courses, mcqQuestions, modules, sections } from "@/lib/schema";
 
 type GeneratedQuestion = {
   question: string;
@@ -19,9 +19,9 @@ export async function generateMcqFromPdfAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
-  const contentItemId = (formData.get("contentItemId") as string | null)?.trim();
+  const activityId = (formData.get("activityId") as string | null)?.trim();
   const numQuestionsRaw = (formData.get("numQuestions") as string | null)?.trim() ?? "10";
-  if (!contentItemId) redirect("/dashboard?error=Missing%20content%20item");
+  if (!activityId) redirect("/dashboard?error=Missing%20activity");
 
   const numQuestions = Math.min(Math.max(parseInt(numQuestionsRaw, 10) || 10, 3), 20);
 
@@ -29,24 +29,33 @@ export async function generateMcqFromPdfAction(formData: FormData) {
 
   const itemRow = await db
     .select({
-      itemId: contentItems.id,
-      itemTitle: contentItems.title,
-      itemType: contentItems.type,
-      itemContent: contentItems.content,
-      sectionId: sections.id,
+      activityId: activities.id,
+      activityTitle: activities.title,
+      activityType: activities.type,
+      activityContent: activities.content,
+      activityPayload: activities.contentPayload,
       courseId: courses.id,
       instructorId: courses.instructorId,
     })
-    .from(contentItems)
-    .leftJoin(sections, eq(contentItems.sectionId, sections.id))
+    .from(activities)
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
     .leftJoin(modules, eq(sections.moduleId, modules.id))
     .leftJoin(courses, eq(modules.courseId, courses.id))
-    .where(eq(contentItems.id, contentItemId))
+    .where(eq(activities.id, activityId))
     .limit(1);
 
   const item = itemRow[0];
-  if (!item) redirect("/dashboard?error=Content%20item%20not%20found");
-  if (item.itemType !== "pdf") redirect(`/courses/${item.courseId}?error=Item%20is%20not%20a%20PDF`);
+  if (!item) redirect("/dashboard?error=Activity%20not%20found");
+
+  let payload: { fileType?: string } = {};
+  try {
+    payload = item.activityPayload ? JSON.parse(item.activityPayload) : {};
+  } catch {
+    payload = {};
+  }
+  if (item.activityType !== "read" || payload.fileType !== "pdf") {
+    redirect(`/courses/${item.courseId}?error=Activity%20is%20not%20a%20PDF%20Read`);
+  }
 
   const isOwner = user.role === "instructor" && user.id === item.instructorId;
   const isAdmin = user.role === "admin";
@@ -54,18 +63,16 @@ export async function generateMcqFromPdfAction(formData: FormData) {
     redirect(`/courses/${item.courseId}?error=Not%20authorized`);
   }
 
-  // Fetch PDF bytes from R2 public URL
   let pdfBase64: string;
   try {
-    const resp = await fetch(item.itemContent);
+    const resp = await fetch(item.activityContent);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const buffer = await resp.arrayBuffer();
     pdfBase64 = Buffer.from(buffer).toString("base64");
   } catch {
-    redirect(`/courses/${item.courseId}/activities/${contentItemId}?error=Failed%20to%20fetch%20PDF`);
+    redirect(`/courses/${item.courseId}/activities/${activityId}?error=Failed%20to%20fetch%20PDF`);
   }
 
-  // Call Claude API with native PDF support
   const model = process.env.MCQ_MODEL ?? "claude-sonnet-4-6";
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -108,27 +115,34 @@ Focus on key concepts, definitions, and important facts. Make distractors plausi
     if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid response shape");
     questions = parsed;
   } catch {
-    redirect(`/courses/${item.courseId}/activities/${contentItemId}?error=AI%20generation%20failed`);
+    redirect(`/courses/${item.courseId}/activities/${activityId}?error=AI%20generation%20failed`);
   }
 
-  // Create the assignment and questions
-  const assignmentId = crypto.randomUUID();
+  const lastAssessment = await db
+    .select({ order: assessments.order })
+    .from(assessments)
+    .where(eq(assessments.activityId, activityId))
+    .orderBy(desc(assessments.order))
+    .limit(1);
+  const nextOrder = (lastAssessment[0]?.order ?? 0) + 1;
 
-  await db.insert(assignments).values({
-    id: assignmentId,
-    courseId: item.courseId!,
-    sectionId: item.sectionId ?? null,
-    title: `Quiz: ${item.itemTitle}`,
-    description: `Auto-generated MCQ quiz from "${item.itemTitle}". ${questions.length} questions.`,
+  const assessmentId = crypto.randomUUID();
+
+  await db.insert(assessments).values({
+    id: assessmentId,
+    activityId,
     type: "mcq",
-    sourceContentItemId: contentItemId,
+    title: `Quiz: ${item.activityTitle}`,
+    description: `Auto-generated MCQ quiz from "${item.activityTitle}". ${questions.length} questions.`,
+    graded: false,
     mcqModel: model,
+    order: nextOrder,
   });
 
   await db.insert(mcqQuestions).values(
     questions.map((q, i) => ({
       id: crypto.randomUUID(),
-      assignmentId,
+      assessmentId,
       order: i + 1,
       questionText: q.question,
       options: JSON.stringify(q.options),
@@ -137,5 +151,5 @@ Focus on key concepts, definitions, and important facts. Make distractors plausi
     }))
   );
 
-  redirect(`/courses/${item.courseId}/assignments/${assignmentId}?notice=Quiz%20created`);
+  redirect(`/courses/${item.courseId}/activities/${activityId}?notice=Quiz%20created`);
 }
