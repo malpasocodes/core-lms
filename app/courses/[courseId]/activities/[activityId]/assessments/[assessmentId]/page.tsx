@@ -117,6 +117,7 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
             submittedAt: submissions.submittedAt,
             submissionText: submissions.submissionText,
             fileUrl: submissions.fileUrl,
+            mcqAnswers: submissions.mcqAnswers,
             email: users.email,
             gradeScore: grades.score,
             gradedAt: grades.gradedAt,
@@ -420,6 +421,73 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
                         {sub.fileUrl}
                       </a>
                     ) : null}
+                    {isMcq && sub.mcqAnswers && questions.length > 0
+                      ? (() => {
+                          let answers: Record<string, number> = {};
+                          try {
+                            answers = JSON.parse(sub.mcqAnswers);
+                          } catch {
+                            answers = {};
+                          }
+                          return (
+                            <details className="rounded-md border border-border/60 bg-card/70">
+                              <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                View answers
+                              </summary>
+                              <div className="space-y-3 border-t border-border/60 px-3 py-3">
+                                {questions.map((q, i) => {
+                                  const opts: string[] = JSON.parse(q.options);
+                                  const chosen = answers[q.id];
+                                  const answered = typeof chosen === "number";
+                                  const isCorrect = answered && chosen === q.correctIndex;
+                                  return (
+                                    <div key={q.id} className="space-y-1">
+                                      <p className="text-sm font-medium text-foreground">
+                                        {i + 1}. {q.questionText}{" "}
+                                        <span
+                                          className={
+                                            isCorrect
+                                              ? "text-green-600 dark:text-green-400"
+                                              : "text-red-600 dark:text-red-400"
+                                          }
+                                        >
+                                          {isCorrect ? "✓" : "✗"}
+                                        </span>
+                                      </p>
+                                      <div className="space-y-0.5 pl-1">
+                                        {opts.map((opt, j) => (
+                                          <p
+                                            key={j}
+                                            className={`text-sm ${
+                                              j === q.correctIndex
+                                                ? "text-green-600 dark:text-green-400 font-medium"
+                                                : j === chosen && !isCorrect
+                                                  ? "text-red-600 dark:text-red-400 line-through"
+                                                  : "text-muted-foreground"
+                                            }`}
+                                          >
+                                            {j === q.correctIndex
+                                              ? "✓ "
+                                              : j === chosen
+                                                ? "● "
+                                                : "○ "}
+                                            {opt}
+                                          </p>
+                                        ))}
+                                      </div>
+                                      {q.explanation ? (
+                                        <p className="pl-1 pt-1 text-xs text-muted-foreground">
+                                          {q.explanation}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </details>
+                          );
+                        })()
+                      : null}
                   </div>
                 ))}
               </div>

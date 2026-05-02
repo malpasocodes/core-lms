@@ -99,5 +99,7 @@ export async function submitMcqAction(formData: FormData) {
     });
   }
 
-  redirect(`/courses/${found.courseId}/activities/${found.activityId}?notice=Submitted`);
+  redirect(
+    `/courses/${found.courseId}/activities/${found.activityId}/assessments/${assessmentId}?notice=Submitted`
+  );
 }
