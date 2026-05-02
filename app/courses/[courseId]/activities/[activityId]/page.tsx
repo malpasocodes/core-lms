@@ -18,7 +18,7 @@ import { NormalizedContentRenderer } from "@/components/normalized-content-rende
 import { MarkdownItemEditor } from "@/components/markdown-item-editor";
 import { HtmlItemEditor } from "@/components/html-item-editor";
 import { GenerateMcqButton } from "@/components/generate-mcq-button";
-import { generateMcqFromPdfAction } from "@/lib/mcq-actions";
+import { generateMcqFromActivityAction } from "@/lib/mcq-actions";
 import { submitWriteActivityAction } from "@/lib/module-actions";
 import { WriteActivityClient } from "@/components/write-activity-client";
 
@@ -237,7 +237,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
                 Use AI to generate multiple-choice questions from this PDF. A new MCQ assessment
                 will be attached to this activity.
               </p>
-              <form action={generateMcqFromPdfAction} className="flex items-center gap-3">
+              <form action={generateMcqFromActivityAction} className="flex items-center gap-3">
                 <input type="hidden" name="activityId" value={activityId} />
                 <label className="text-xs text-muted-foreground" htmlFor="num-questions">
                   Questions:
@@ -261,12 +261,39 @@ export default async function ActivityPage(props: ActivityPageProps) {
       )}
 
       {item.activityType === "read" && payload.fileType === "markdown" && (isOwner || isAdmin) ? (
-        <MarkdownItemEditor
-          itemId={activityId}
-          initialTitle={item.activityTitle}
-          initialContent={item.activityContent}
-          redirectTo={`/courses/${courseId}/activities/${activityId}`}
-        />
+        <div className="space-y-3">
+          <MarkdownItemEditor
+            itemId={activityId}
+            initialTitle={item.activityTitle}
+            initialContent={item.activityContent}
+            redirectTo={`/courses/${courseId}/activities/${activityId}`}
+          />
+          <div className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3">
+            <p className="text-sm font-semibold text-foreground">Generate MCQ Quiz</p>
+            <p className="text-xs text-muted-foreground">
+              Use AI to generate multiple-choice questions from this Markdown content. A new MCQ
+              assessment will be attached to this activity.
+            </p>
+            <form action={generateMcqFromActivityAction} className="flex items-center gap-3">
+              <input type="hidden" name="activityId" value={activityId} />
+              <label className="text-xs text-muted-foreground" htmlFor="md-num-questions">
+                Questions:
+              </label>
+              <select
+                id="md-num-questions"
+                name="numQuestions"
+                defaultValue="10"
+                className="flex h-7 w-20 rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+              </select>
+              <GenerateMcqButton />
+            </form>
+          </div>
+        </div>
       ) : item.activityType === "read" && payload.fileType === "markdown" ? (
         <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
           <div className="prose prose-neutral dark:prose-invert max-w-none">

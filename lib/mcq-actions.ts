@@ -18,7 +18,7 @@ type GeneratedQuestion = {
 };
 
 function buildPrompt(numQuestions: number) {
-  return `Generate exactly ${numQuestions} multiple-choice questions based on the content of this PDF document.
+  return `Generate exactly ${numQuestions} multiple-choice questions based on the source content provided.
 Return ONLY a JSON array with no markdown fencing or extra commentary. Each element must have:
 - "question": string (the question text)
 - "options": array of exactly 4 strings (the answer choices)
@@ -36,32 +36,43 @@ function parseQuestions(raw: string): GeneratedQuestion[] {
   return parsed;
 }
 
+type Source =
+  | { kind: "pdf"; url: string }
+  | { kind: "markdown"; text: string };
+
 async function generateWithAnthropic(
   modelId: string,
-  pdfUrl: string,
+  source: Source,
   numQuestions: number
 ): Promise<GeneratedQuestion[]> {
-  const resp = await fetch(pdfUrl);
-  if (!resp.ok) throw new Error(`Failed to fetch PDF (HTTP ${resp.status})`);
-  const buffer = await resp.arrayBuffer();
-  const pdfBase64 = Buffer.from(buffer).toString("base64");
-
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+  let userContent: Anthropic.Messages.ContentBlockParam[];
+  if (source.kind === "pdf") {
+    const resp = await fetch(source.url);
+    if (!resp.ok) throw new Error(`Failed to fetch PDF (HTTP ${resp.status})`);
+    const buffer = await resp.arrayBuffer();
+    const pdfBase64 = Buffer.from(buffer).toString("base64");
+    userContent = [
+      {
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: pdfBase64 },
+      },
+      { type: "text", text: buildPrompt(numQuestions) },
+    ];
+  } else {
+    userContent = [
+      {
+        type: "text",
+        text: `${buildPrompt(numQuestions)}\n\nSource content (Markdown):\n\n${source.text}`,
+      },
+    ];
+  }
+
   const message = await anthropic.messages.create({
     model: modelId,
     max_tokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "document",
-            source: { type: "base64", media_type: "application/pdf", data: pdfBase64 },
-          },
-          { type: "text", text: buildPrompt(numQuestions) },
-        ],
-      },
-    ],
+    messages: [{ role: "user", content: userContent }],
   });
 
   const raw = (message.content[0] as { type: "text"; text: string }).text;
@@ -70,22 +81,28 @@ async function generateWithAnthropic(
 
 async function generateWithMistral(
   modelId: string,
-  pdfUrl: string,
+  source: Source,
   numQuestions: number
 ): Promise<GeneratedQuestion[]> {
   const mistral = new Mistral({ apiKey: process.env.MISTRAL_API_KEY! });
+
+  const userContent =
+    source.kind === "pdf"
+      ? [
+          { type: "document_url" as const, documentUrl: source.url },
+          { type: "text" as const, text: buildPrompt(numQuestions) },
+        ]
+      : [
+          {
+            type: "text" as const,
+            text: `${buildPrompt(numQuestions)}\n\nSource content (Markdown):\n\n${source.text}`,
+          },
+        ];
+
   const resp = await mistral.chat.complete({
     model: modelId,
     maxTokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "document_url", documentUrl: pdfUrl },
-          { type: "text", text: buildPrompt(numQuestions) },
-        ],
-      },
-    ],
+    messages: [{ role: "user", content: userContent }],
   });
 
   const content = resp.choices[0]?.message?.content;
@@ -106,7 +123,7 @@ async function generateWithMistral(
   return parseQuestions(raw);
 }
 
-export async function generateMcqFromPdfAction(formData: FormData) {
+export async function generateMcqFromActivityAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
@@ -144,8 +161,11 @@ export async function generateMcqFromPdfAction(formData: FormData) {
   } catch {
     payload = {};
   }
-  if (item.activityType !== "read" || payload.fileType !== "pdf") {
-    redirect(`/courses/${item.courseId}?error=Activity%20is%20not%20a%20PDF%20Read`);
+  if (
+    item.activityType !== "read" ||
+    (payload.fileType !== "pdf" && payload.fileType !== "markdown")
+  ) {
+    redirect(`/courses/${item.courseId}?error=Activity%20does%20not%20support%20MCQ%20generation`);
   }
 
   const isOwner = user.role === "instructor" && user.id === item.instructorId;
@@ -156,12 +176,17 @@ export async function generateMcqFromPdfAction(formData: FormData) {
 
   const activeModel = await getActiveModel();
 
+  const source: Source =
+    payload.fileType === "pdf"
+      ? { kind: "pdf", url: item.activityContent }
+      : { kind: "markdown", text: item.activityContent };
+
   let questions: GeneratedQuestion[];
   try {
     if (activeModel.provider === "anthropic") {
-      questions = await generateWithAnthropic(activeModel.id, item.activityContent, numQuestions);
+      questions = await generateWithAnthropic(activeModel.id, source, numQuestions);
     } else if (activeModel.provider === "mistral") {
-      questions = await generateWithMistral(activeModel.id, item.activityContent, numQuestions);
+      questions = await generateWithMistral(activeModel.id, source, numQuestions);
     } else {
       throw new Error(`Unsupported provider: ${activeModel.provider}`);
     }
