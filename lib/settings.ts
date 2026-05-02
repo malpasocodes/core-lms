@@ -13,6 +13,7 @@ export type ModelOption = {
 
 export const MODEL_OPTIONS: ModelOption[] = [
   { id: "claude-sonnet-4-6", label: "Anthropic — Claude Sonnet 4.6", provider: "anthropic" },
+  { id: "claude-haiku-4-5", label: "Anthropic — Claude Haiku 4.5", provider: "anthropic" },
   { id: "mistral-medium-2505", label: "Mistral — Medium 3", provider: "mistral" },
 ];
 

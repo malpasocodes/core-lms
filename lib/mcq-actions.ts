@@ -155,14 +155,13 @@ export async function generateMcqFromPdfAction(formData: FormData) {
   }
 
   const activeModel = await getActiveModel();
-  const modelId = process.env.MCQ_MODEL ?? activeModel.id;
 
   let questions: GeneratedQuestion[];
   try {
     if (activeModel.provider === "anthropic") {
-      questions = await generateWithAnthropic(modelId, item.activityContent, numQuestions);
+      questions = await generateWithAnthropic(activeModel.id, item.activityContent, numQuestions);
     } else if (activeModel.provider === "mistral") {
-      questions = await generateWithMistral(modelId, item.activityContent, numQuestions);
+      questions = await generateWithMistral(activeModel.id, item.activityContent, numQuestions);
     } else {
       throw new Error(`Unsupported provider: ${activeModel.provider}`);
     }
@@ -187,7 +186,7 @@ export async function generateMcqFromPdfAction(formData: FormData) {
     title: `Quiz: ${item.activityTitle}`,
     description: `Auto-generated MCQ quiz from "${item.activityTitle}". ${questions.length} questions.`,
     graded: false,
-    mcqModel: modelId,
+    mcqModel: activeModel.id,
     order: nextOrder,
   });
 
