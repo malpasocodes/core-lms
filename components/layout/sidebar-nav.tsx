@@ -10,6 +10,7 @@ import {
   BookOpen01Icon,
   UserGroupIcon,
   Settings01Icon,
+  Configuration01Icon,
   BookDownloadIcon,
   Menu01Icon,
   Cancel01Icon,
@@ -63,6 +64,7 @@ function SidebarContent({ user, onNavigate }: { user?: { email: string; role: Ro
   const adminItems: NavItem[] = [
     { label: "Roster", href: "/admin/roster", icon: UserGroupIcon },
     { label: "OpenStax", href: "/admin/openstax", icon: BookDownloadIcon },
+    { label: "Settings", href: "/admin/settings", icon: Configuration01Icon },
     { label: "Admin", href: "/admin", icon: Settings01Icon },
   ];
 

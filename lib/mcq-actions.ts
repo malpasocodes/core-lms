@@ -1,12 +1,14 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
+import { Mistral } from "@mistralai/mistralai";
 import { redirect } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { activities, assessments, courses, mcqQuestions, modules, sections } from "@/lib/schema";
+import { getActiveModel } from "@/lib/settings";
 
 type GeneratedQuestion = {
   question: string;
@@ -14,6 +16,95 @@ type GeneratedQuestion = {
   correctIndex: number;
   explanation: string;
 };
+
+function buildPrompt(numQuestions: number) {
+  return `Generate exactly ${numQuestions} multiple-choice questions based on the content of this PDF document.
+Return ONLY a JSON array with no markdown fencing or extra commentary. Each element must have:
+- "question": string (the question text)
+- "options": array of exactly 4 strings (the answer choices)
+- "correctIndex": integer 0-3 (index of the correct option)
+- "explanation": string (brief explanation of why the answer is correct)
+
+Focus on key concepts, definitions, and important facts. Make distractors plausible but clearly incorrect.`;
+}
+
+function parseQuestions(raw: string): GeneratedQuestion[] {
+  const trimmed = raw.trim();
+  const jsonStr = trimmed.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+  const parsed = JSON.parse(jsonStr);
+  if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid response shape");
+  return parsed;
+}
+
+async function generateWithAnthropic(
+  modelId: string,
+  pdfUrl: string,
+  numQuestions: number
+): Promise<GeneratedQuestion[]> {
+  const resp = await fetch(pdfUrl);
+  if (!resp.ok) throw new Error(`Failed to fetch PDF (HTTP ${resp.status})`);
+  const buffer = await resp.arrayBuffer();
+  const pdfBase64 = Buffer.from(buffer).toString("base64");
+
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  const message = await anthropic.messages.create({
+    model: modelId,
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "document",
+            source: { type: "base64", media_type: "application/pdf", data: pdfBase64 },
+          },
+          { type: "text", text: buildPrompt(numQuestions) },
+        ],
+      },
+    ],
+  });
+
+  const raw = (message.content[0] as { type: "text"; text: string }).text;
+  return parseQuestions(raw);
+}
+
+async function generateWithMistral(
+  modelId: string,
+  pdfUrl: string,
+  numQuestions: number
+): Promise<GeneratedQuestion[]> {
+  const mistral = new Mistral({ apiKey: process.env.MISTRAL_API_KEY! });
+  const resp = await mistral.chat.complete({
+    model: modelId,
+    maxTokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "document_url", documentUrl: pdfUrl },
+          { type: "text", text: buildPrompt(numQuestions) },
+        ],
+      },
+    ],
+  });
+
+  const content = resp.choices[0]?.message?.content;
+  const raw =
+    typeof content === "string"
+      ? content
+      : Array.isArray(content)
+        ? content
+            .map((chunk) => {
+              if (chunk && typeof chunk === "object" && "type" in chunk && chunk.type === "text") {
+                return (chunk as { text: string }).text;
+              }
+              return "";
+            })
+            .join("")
+        : "";
+  if (!raw) throw new Error("Empty Mistral response");
+  return parseQuestions(raw);
+}
 
 export async function generateMcqFromPdfAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -63,57 +154,18 @@ export async function generateMcqFromPdfAction(formData: FormData) {
     redirect(`/courses/${item.courseId}?error=Not%20authorized`);
   }
 
-  let pdfBase64: string;
-  try {
-    const resp = await fetch(item.activityContent);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const buffer = await resp.arrayBuffer();
-    pdfBase64 = Buffer.from(buffer).toString("base64");
-  } catch {
-    redirect(`/courses/${item.courseId}/activities/${activityId}?error=Failed%20to%20fetch%20PDF`);
-  }
-
-  const model = process.env.MCQ_MODEL ?? "claude-sonnet-4-6";
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  const activeModel = await getActiveModel();
+  const modelId = process.env.MCQ_MODEL ?? activeModel.id;
 
   let questions: GeneratedQuestion[];
   try {
-    const message = await anthropic.messages.create({
-      model,
-      max_tokens: 4096,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: pdfBase64,
-              },
-            },
-            {
-              type: "text",
-              text: `Generate exactly ${numQuestions} multiple-choice questions based on the content of this PDF document.
-Return ONLY a JSON array with no markdown fencing or extra commentary. Each element must have:
-- "question": string (the question text)
-- "options": array of exactly 4 strings (the answer choices)
-- "correctIndex": integer 0-3 (index of the correct option)
-- "explanation": string (brief explanation of why the answer is correct)
-
-Focus on key concepts, definitions, and important facts. Make distractors plausible but clearly incorrect.`,
-            },
-          ],
-        },
-      ],
-    });
-
-    const raw = (message.content[0] as { type: "text"; text: string }).text.trim();
-    const jsonStr = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
-    const parsed = JSON.parse(jsonStr);
-    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("Invalid response shape");
-    questions = parsed;
+    if (activeModel.provider === "anthropic") {
+      questions = await generateWithAnthropic(modelId, item.activityContent, numQuestions);
+    } else if (activeModel.provider === "mistral") {
+      questions = await generateWithMistral(modelId, item.activityContent, numQuestions);
+    } else {
+      throw new Error(`Unsupported provider: ${activeModel.provider}`);
+    }
   } catch {
     redirect(`/courses/${item.courseId}/activities/${activityId}?error=AI%20generation%20failed`);
   }
@@ -135,7 +187,7 @@ Focus on key concepts, definitions, and important facts. Make distractors plausi
     title: `Quiz: ${item.activityTitle}`,
     description: `Auto-generated MCQ quiz from "${item.activityTitle}". ${questions.length} questions.`,
     graded: false,
-    mcqModel: model,
+    mcqModel: modelId,
     order: nextOrder,
   });
 

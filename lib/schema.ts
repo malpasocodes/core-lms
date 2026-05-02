@@ -232,3 +232,13 @@ export const openstaxSections = pgTable("openstax_sections", {
 export type OpenstaxBook = typeof openstaxBooks.$inferSelect;
 export type OpenstaxChapter = typeof openstaxChapters.$inferSelect;
 export type OpenstaxSection = typeof openstaxSections.$inferSelect;
+
+// ── App Settings ───────────────────────────────────────────────────────────
+
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;

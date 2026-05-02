@@ -2,6 +2,26 @@
 
 ## 2026-05-01
 
+### Admin Settings page with model selector
+- New admin-only **Settings** entry in the left sidebar (`Configuration01Icon`) linking to `/admin/settings`
+- Settings page exposes an "Active model" dropdown — current options: **Anthropic Claude Sonnet 4.6** and **Mistral Medium 3** (`mistral-medium-2505`)
+- Selection persists in a new `app_settings` key/value table; defaults to Claude Sonnet 4.6 when unset
+- MCQ generation reads the active model from settings and dispatches per provider — Anthropic uploads PDF as base64; Mistral references the PDF via public R2 URL using `document_url` chunks
+- Adds `@mistralai/mistralai` SDK dependency; new `MISTRAL_API_KEY` env var required when Mistral is selected
+
+**Files created:**
+- `drizzle/0003_smart_loa.sql`
+- `drizzle/meta/0003_snapshot.json`
+- `lib/settings.ts` — model registry + `getActiveModel()`
+- `lib/settings-actions.ts` — `setActiveModelAction` server action
+- `app/admin/settings/page.tsx`
+
+**Files modified:**
+- `lib/schema.ts` — adds `app_settings` table
+- `lib/mcq-actions.ts` — provider dispatch (`generateWithAnthropic` / `generateWithMistral`), shared prompt + parser
+- `components/layout/sidebar-nav.tsx` — Settings entry for admins
+- `package.json` — `@mistralai/mistralai` dependency
+
 ### Activities & Assessments Overhaul
 - Replaced `content_items` and `assignments` with a cleaner two-tier model: **activities** (Watch / Listen / Read / Write) inside sections, with **assessments** (open_ended or mcq, formative by default) attached per activity
 - Boolean per-activity completion (`completions`) — Watch/Listen/Read complete via "Mark complete"; Write completes when the learner submits the prompt response
