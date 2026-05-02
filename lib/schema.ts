@@ -151,6 +151,30 @@ export const completions = pgTable(
 export type Submission = typeof submissions.$inferSelect;
 export type Completion = typeof completions.$inferSelect;
 
+export const activityNotes = pgTable(
+  "activity_notes",
+  {
+    id: text("id").primaryKey(),
+    activityId: text("activity_id")
+      .notNull()
+      .references(() => activities.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    notes: text("notes").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueActivityUser: uniqueIndex("activity_notes_activity_user_unique").on(
+      table.activityId,
+      table.userId
+    ),
+  })
+);
+
+export type ActivityNote = typeof activityNotes.$inferSelect;
+
 export const grades = pgTable(
   "grades",
   {

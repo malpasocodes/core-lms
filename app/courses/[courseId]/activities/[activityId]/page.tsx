@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { activities, assessments, courses, modules, sections, submissions, users } from "@/lib/schema";
+import { activities, activityNotes, assessments, courses, modules, sections, submissions, users } from "@/lib/schema";
 import { markActivityCompleteAction } from "@/lib/progress-actions";
 import { NormalizedContentRenderer } from "@/components/normalized-content-renderer";
 import { MarkdownItemEditor } from "@/components/markdown-item-editor";
@@ -24,6 +24,7 @@ import {
   updateWatchActivityTranscriptAction,
 } from "@/lib/module-actions";
 import { WriteActivityClient } from "@/components/write-activity-client";
+import { WatchNotesClient } from "@/components/watch-notes-client";
 
 type ActivityPageProps = {
   params: Promise<{ courseId: string; activityId: string }>;
@@ -167,6 +168,16 @@ export default async function ActivityPage(props: ActivityPageProps) {
 
   const listedAssessments = allAssessments.filter((a) => a.id !== builtInWriteAssessmentId);
 
+  let watchNote: { notes: string } | null = null;
+  if (item.activityType === "watch" && user.role === "learner") {
+    const noteRow = await db
+      .select({ notes: activityNotes.notes })
+      .from(activityNotes)
+      .where(and(eq(activityNotes.activityId, activityId), eq(activityNotes.userId, user.id)))
+      .limit(1);
+    watchNote = noteRow[0] ?? null;
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -205,6 +216,14 @@ export default async function ActivityPage(props: ActivityPageProps) {
               className="absolute inset-0 h-full w-full rounded-lg border border-border/60"
             />
           </div>
+
+          {user.role === "learner" && (
+            <WatchNotesClient
+              activityId={activityId}
+              initial={watchNote?.notes ?? ""}
+              locked={isCompleted}
+            />
+          )}
 
           {(isOwner || isAdmin) && (
             <>
@@ -452,7 +471,8 @@ export default async function ActivityPage(props: ActivityPageProps) {
       )}
 
       {/* ── Assessments attached to this activity ── */}
-      {listedAssessments.length > 0 && (
+      {listedAssessments.length > 0 &&
+        !(user.role === "learner" && item.activityType === "watch") && (
         <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-6 space-y-3">
           <p className="text-sm font-semibold text-foreground">Assessments</p>
           <ul className="space-y-2">
@@ -490,7 +510,9 @@ export default async function ActivityPage(props: ActivityPageProps) {
           <span />
         )}
         <div className="flex items-center gap-3">
-          {user.role === "learner" && item.activityType !== "write" ? (
+          {user.role === "learner" &&
+          item.activityType !== "write" &&
+          item.activityType !== "watch" ? (
             <form action={markActivityCompleteAction}>
               <input type="hidden" name="activityId" value={activityId} />
               <Button type="submit" variant="outline" disabled={isCompleted}>

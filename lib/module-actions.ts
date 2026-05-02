@@ -6,7 +6,16 @@ import { asc, desc, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { uploadFileToR2, uploadPdfToR2 } from "@/lib/r2";
-import { activities, assessments, completions, courses, modules, sections, submissions } from "@/lib/schema";
+import {
+  activities,
+  activityNotes,
+  assessments,
+  completions,
+  courses,
+  modules,
+  sections,
+  submissions,
+} from "@/lib/schema";
 
 export async function createModuleAction(formData: FormData) {
   const title = (formData.get("title") as string | null)?.trim();
@@ -245,6 +254,99 @@ export async function updateReadHtmlActivityAction(formData: FormData) {
 
 export async function updateReadMarkdownActivityAction(formData: FormData) {
   await updateReadActivityContent(formData, "markdown", "Not a Markdown Read activity");
+}
+
+const WATCH_NOTES_MIN = 100;
+const WATCH_NOTES_MAX = 2000;
+
+export async function saveWatchNotesAndCompleteAction(formData: FormData) {
+  const activityId = (formData.get("activityId") as string | null)?.trim();
+  const notes = ((formData.get("notes") as string | null) ?? "").trim();
+  if (!activityId) redirect("/dashboard?error=Missing%20activity");
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+
+  const db = await getDb();
+  const itemRow = await db
+    .select({
+      id: activities.id,
+      type: activities.type,
+      courseId: courses.id,
+    })
+    .from(activities)
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(activities.id, activityId))
+    .limit(1);
+
+  const item = itemRow[0];
+  if (!item || !item.courseId) {
+    redirect("/dashboard?error=Activity%20not%20found");
+  }
+
+  const back = `/courses/${item.courseId}/activities/${activityId}`;
+
+  if (item.type !== "watch") {
+    redirect(`${back}?error=Notes%20only%20available%20on%20Watch%20activities`);
+  }
+  if (user.role !== "learner") {
+    redirect(`${back}?error=Only%20learners%20can%20save%20notes`);
+  }
+
+  const enrollment = await db.query.enrollments.findFirst({
+    columns: { id: true },
+    where: (e, { and, eq }) =>
+      and(eq(e.courseId, item.courseId as string), eq(e.userId, user.id)),
+  });
+  if (!enrollment) redirect(`/courses/${item.courseId}?error=Not%20enrolled`);
+
+  const alreadyComplete = await db.query.completions.findFirst({
+    columns: { id: true },
+    where: (c, { and, eq }) => and(eq(c.activityId, activityId), eq(c.userId, user.id)),
+  });
+  if (alreadyComplete) {
+    redirect(`${back}?error=Already%20marked%20complete`);
+  }
+
+  if (notes.length < WATCH_NOTES_MIN) {
+    redirect(`${back}?error=Notes%20must%20be%20at%20least%20${WATCH_NOTES_MIN}%20characters`);
+  }
+  if (notes.length > WATCH_NOTES_MAX) {
+    redirect(`${back}?error=Notes%20exceed%20${WATCH_NOTES_MAX}%20character%20limit`);
+  }
+
+  const now = new Date();
+
+  const existingNote = await db.query.activityNotes.findFirst({
+    columns: { id: true },
+    where: (n, { and, eq }) => and(eq(n.activityId, activityId), eq(n.userId, user.id)),
+  });
+  if (existingNote) {
+    await db
+      .update(activityNotes)
+      .set({ notes, updatedAt: now })
+      .where(eq(activityNotes.id, existingNote.id));
+  } else {
+    await db.insert(activityNotes).values({
+      id: crypto.randomUUID(),
+      activityId,
+      userId: user.id,
+      notes,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  await db.insert(completions).values({
+    id: crypto.randomUUID(),
+    activityId,
+    userId: user.id,
+    completedAt: now,
+  });
+
+  redirect(`${back}?notice=Video%20marked%20complete`);
 }
 
 export async function updateWatchActivityTranscriptAction(formData: FormData) {
