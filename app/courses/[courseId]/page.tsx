@@ -36,6 +36,7 @@ import {
   importOpenstaxSectionAsReadActivityAction,
 } from "@/lib/openstax-actions";
 import { CourseTabs } from "./_components/course-tabs";
+import { DeleteActivityButton } from "./_components/delete-activity-button";
 
 type CoursePageProps = {
   params: Promise<{ courseId: string }>;
@@ -503,6 +504,13 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                           <span className="text-xs uppercase tracking-wide text-muted-foreground">
                                             {item.type}
                                           </span>
+                                          {canEdit && (
+                                            <DeleteActivityButton
+                                              activityId={item.id}
+                                              activityTitle={item.title}
+                                              activityType={item.type}
+                                            />
+                                          )}
                                         </div>
                                       </li>
                                     ))}
