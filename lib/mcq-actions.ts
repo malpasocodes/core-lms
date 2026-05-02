@@ -38,7 +38,12 @@ function parseQuestions(raw: string): GeneratedQuestion[] {
 
 type Source =
   | { kind: "pdf"; url: string }
-  | { kind: "markdown"; text: string };
+  | { kind: "markdown"; text: string }
+  | { kind: "transcript"; text: string };
+
+function textSourceLabel(kind: "markdown" | "transcript") {
+  return kind === "transcript" ? "Video transcript" : "Markdown";
+}
 
 async function generateWithAnthropic(
   modelId: string,
@@ -64,7 +69,7 @@ async function generateWithAnthropic(
     userContent = [
       {
         type: "text",
-        text: `${buildPrompt(numQuestions)}\n\nSource content (Markdown):\n\n${source.text}`,
+        text: `${buildPrompt(numQuestions)}\n\nSource content (${textSourceLabel(source.kind)}):\n\n${source.text}`,
       },
     ];
   }
@@ -95,7 +100,7 @@ async function generateWithMistral(
       : [
           {
             type: "text" as const,
-            text: `${buildPrompt(numQuestions)}\n\nSource content (Markdown):\n\n${source.text}`,
+            text: `${buildPrompt(numQuestions)}\n\nSource content (${textSourceLabel(source.kind)}):\n\n${source.text}`,
           },
         ];
 
@@ -155,16 +160,20 @@ export async function generateMcqFromActivityAction(formData: FormData) {
   const item = itemRow[0];
   if (!item) redirect("/dashboard?error=Activity%20not%20found");
 
-  let payload: { fileType?: string } = {};
+  let payload: { fileType?: string; transcript?: string } = {};
   try {
     payload = item.activityPayload ? JSON.parse(item.activityPayload) : {};
   } catch {
     payload = {};
   }
-  if (
-    item.activityType !== "read" ||
-    (payload.fileType !== "pdf" && payload.fileType !== "markdown")
-  ) {
+
+  const isReadPdfOrMarkdown =
+    item.activityType === "read" &&
+    (payload.fileType === "pdf" || payload.fileType === "markdown");
+  const transcript = typeof payload.transcript === "string" ? payload.transcript.trim() : "";
+  const isWatchWithTranscript = item.activityType === "watch" && transcript.length > 0;
+
+  if (!isReadPdfOrMarkdown && !isWatchWithTranscript) {
     redirect(`/courses/${item.courseId}?error=Activity%20does%20not%20support%20MCQ%20generation`);
   }
 
@@ -176,8 +185,9 @@ export async function generateMcqFromActivityAction(formData: FormData) {
 
   const activeModel = await getActiveModel();
 
-  const source: Source =
-    payload.fileType === "pdf"
+  const source: Source = isWatchWithTranscript
+    ? { kind: "transcript", text: transcript }
+    : payload.fileType === "pdf"
       ? { kind: "pdf", url: item.activityContent }
       : { kind: "markdown", text: item.activityContent };
 

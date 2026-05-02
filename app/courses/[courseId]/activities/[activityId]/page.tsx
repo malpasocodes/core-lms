@@ -19,7 +19,10 @@ import { MarkdownItemEditor } from "@/components/markdown-item-editor";
 import { HtmlItemEditor } from "@/components/html-item-editor";
 import { GenerateMcqButton } from "@/components/generate-mcq-button";
 import { generateMcqFromActivityAction } from "@/lib/mcq-actions";
-import { submitWriteActivityAction } from "@/lib/module-actions";
+import {
+  submitWriteActivityAction,
+  updateWatchActivityTranscriptAction,
+} from "@/lib/module-actions";
 import { WriteActivityClient } from "@/components/write-activity-client";
 
 type ActivityPageProps = {
@@ -192,7 +195,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
 
       {/* ── Watch ── */}
       {item.activityType === "watch" && (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
+        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10 space-y-4">
           <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
             <iframe
               src={`https://www.youtube.com/embed/${payload.youtubeId}`}
@@ -202,6 +205,75 @@ export default async function ActivityPage(props: ActivityPageProps) {
               className="absolute inset-0 h-full w-full rounded-lg border border-border/60"
             />
           </div>
+
+          {(isOwner || isAdmin) && (
+            <>
+              <form
+                action={updateWatchActivityTranscriptAction}
+                className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3"
+              >
+                <input type="hidden" name="activityId" value={activityId} />
+                <input
+                  type="hidden"
+                  name="redirectTo"
+                  value={`/courses/${courseId}/activities/${activityId}`}
+                />
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">Transcript</p>
+                  <p className="text-xs text-muted-foreground">
+                    Paste the video transcript to enable MCQ generation.
+                  </p>
+                </div>
+                <textarea
+                  name="transcript"
+                  defaultValue={typeof payload.transcript === "string" ? payload.transcript : ""}
+                  rows={10}
+                  placeholder="Paste the video transcript here…"
+                  className="flex w-full rounded-md border border-input bg-input/20 px-3 py-2 text-sm font-mono transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30 resize-y"
+                />
+                <Button type="submit" size="sm">
+                  Save transcript
+                </Button>
+              </form>
+
+              <div className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3">
+                <p className="text-sm font-semibold text-foreground">Generate MCQ Quiz</p>
+                <p className="text-xs text-muted-foreground">
+                  Use AI to generate multiple-choice questions from the saved transcript. A new MCQ
+                  assessment will be attached to this activity.
+                </p>
+                {typeof payload.transcript === "string" && payload.transcript.trim().length > 0 ? (
+                  <form action={generateMcqFromActivityAction} className="flex items-center gap-3">
+                    <input type="hidden" name="activityId" value={activityId} />
+                    <label
+                      className="text-xs text-muted-foreground"
+                      htmlFor="watch-num-questions"
+                    >
+                      Questions:
+                    </label>
+                    <select
+                      id="watch-num-questions"
+                      name="numQuestions"
+                      defaultValue="5"
+                      className="flex h-7 w-20 rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[2px] dark:bg-input/30"
+                    >
+                      <option value="5">5</option>
+                      <option value="6">6</option>
+                      <option value="7">7</option>
+                      <option value="8">8</option>
+                      <option value="9">9</option>
+                      <option value="10">10</option>
+                    </select>
+                    <GenerateMcqButton />
+                  </form>
+                ) : (
+                  <p className="text-xs italic text-muted-foreground">
+                    Save a transcript first to enable quiz generation.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 

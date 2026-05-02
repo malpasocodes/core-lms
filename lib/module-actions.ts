@@ -247,6 +247,65 @@ export async function updateReadMarkdownActivityAction(formData: FormData) {
   await updateReadActivityContent(formData, "markdown", "Not a Markdown Read activity");
 }
 
+export async function updateWatchActivityTranscriptAction(formData: FormData) {
+  const activityId = (formData.get("activityId") as string | null)?.trim();
+  const transcript = ((formData.get("transcript") as string | null) ?? "").trim();
+  const redirectTo = (formData.get("redirectTo") as string | null)?.trim();
+
+  if (!activityId) {
+    redirect("/dashboard?error=Missing%20activity");
+  }
+
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+
+  const db = await getDb();
+  const itemRow = await db
+    .select({
+      id: activities.id,
+      type: activities.type,
+      contentPayload: activities.contentPayload,
+      courseId: courses.id,
+      instructorId: courses.instructorId,
+    })
+    .from(activities)
+    .leftJoin(sections, eq(activities.sectionId, sections.id))
+    .leftJoin(modules, eq(sections.moduleId, modules.id))
+    .leftJoin(courses, eq(modules.courseId, courses.id))
+    .where(eq(activities.id, activityId))
+    .limit(1);
+
+  const item = itemRow[0];
+  if (!item || !item.courseId) {
+    redirect("/dashboard?error=Activity%20not%20found");
+  }
+
+  const isOwner = user.role === "instructor" && user.id === item.instructorId;
+  const isAdmin = user.role === "admin";
+  if (!isOwner && !isAdmin) {
+    redirect(`/courses/${item.courseId}?error=Not%20authorized`);
+  }
+
+  if (item.type !== "watch") {
+    redirect(`/courses/${item.courseId}?error=Not%20a%20Watch%20activity`);
+  }
+
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = item.contentPayload ? JSON.parse(item.contentPayload) : {};
+  } catch {
+    payload = {};
+  }
+
+  const next = { ...payload, transcript };
+  await db
+    .update(activities)
+    .set({ contentPayload: JSON.stringify(next) })
+    .where(eq(activities.id, activityId));
+
+  redirect(redirectTo || `/courses/${item.courseId}?tab=modules&notice=Transcript%20saved`);
+}
+
 export async function deleteActivityAction(formData: FormData) {
   const activityId = (formData.get("activityId") as string | null)?.trim();
   if (!activityId) {
