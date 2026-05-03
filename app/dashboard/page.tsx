@@ -1,25 +1,103 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+import { currentUser } from "@clerk/nextjs/server";
+import { eq, count } from "drizzle-orm";
+
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { courses, enrollments } from "@/lib/schema";
-import { eq, count } from "drizzle-orm";
+import { courses, enrollments, userProfiles } from "@/lib/schema";
 import { CourseList } from "./_components/course-list";
+import { ProfileCard } from "./_components/profile-card";
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams?: Promise<{ notice?: string; error?: string }>;
+};
+
+export default async function DashboardPage(props: DashboardPageProps) {
   const user = await getCurrentUser();
 
   if (user?.role === "admin") {
     redirect("/admin");
   }
 
+  const { notice, error } = (await props.searchParams) ?? {};
+
   const db = user ? await getDb() : null;
-
   const isInstructor = user?.role === "instructor";
+  const isLearner = user?.role === "learner";
 
+  // ── Learner view: profile + announcements placeholder ────────────────────
+  if (isLearner && user && db) {
+    const clerk = await currentUser();
+    const profileRow = await db
+      .select({
+        preferredName: userProfiles.preferredName,
+        timezone: userProfiles.timezone,
+        location: userProfiles.location,
+        linkedin: userProfiles.linkedin,
+        bio: userProfiles.bio,
+      })
+      .from(userProfiles)
+      .where(eq(userProfiles.userId, user.id))
+      .limit(1);
+    const profile = profileRow[0] ?? null;
+
+    const displayName =
+      profile?.preferredName ||
+      clerk?.firstName ||
+      user.email.split("@")[0] ||
+      "there";
+
+    return (
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+            Dashboard
+          </p>
+          <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+            Welcome back, {displayName}.
+          </h1>
+        </div>
+
+        {notice && (
+          <div className="rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
+            {notice}
+          </div>
+        )}
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+            {error}
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ProfileCard
+            avatarUrl={clerk?.imageUrl ?? null}
+            displayName={clerk?.firstName ?? user.email.split("@")[0]}
+            email={user.email}
+            accountName={clerk?.fullName ?? null}
+            preferredName={profile?.preferredName ?? null}
+            timezone={profile?.timezone ?? null}
+            location={profile?.location ?? null}
+            linkedin={profile?.linkedin ?? null}
+            bio={profile?.bio ?? null}
+          />
+
+          <div className="rounded-2xl border border-border/70 bg-card/80 p-6 md:p-8">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-foreground">Announcements</h2>
+              <p className="text-sm text-muted-foreground">Latest news and updates</p>
+            </div>
+            <p className="mt-6 text-sm text-muted-foreground">No announcements yet.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Instructor view: existing layout (course list + widgets) ─────────────
   type CourseRow = { id: string; title: string; published: "true" | "false" };
-
   let activeCourses: CourseRow[] = [];
   let enrolledCount = 0;
 
@@ -50,7 +128,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page heading */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
         {user && (
@@ -60,9 +137,7 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* 3-col grid */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left 2/3 — course list */}
         <div className="lg:col-span-2 space-y-4">
           <div className="rounded-lg border border-slate-200 bg-white p-4">
             <h2 className="mb-3 text-sm font-semibold text-slate-700">
@@ -90,9 +165,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Right 1/3 — widgets */}
         <div className="space-y-4">
-          {/* Stats */}
           <div className="rounded-lg border border-slate-200 bg-white p-4">
             <h2 className="mb-3 text-sm font-semibold text-slate-700">Overview</h2>
             <div className="space-y-2">
@@ -111,7 +184,6 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick actions */}
           <div className="rounded-lg border border-slate-200 bg-white p-4">
             <h2 className="mb-3 text-sm font-semibold text-slate-700">Quick Actions</h2>
             <div className="space-y-2 text-sm">

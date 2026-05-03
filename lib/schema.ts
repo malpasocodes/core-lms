@@ -175,6 +175,20 @@ export const activityNotes = pgTable(
 
 export type ActivityNote = typeof activityNotes.$inferSelect;
 
+export const userProfiles = pgTable("user_profiles", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  preferredName: text("preferred_name"),
+  timezone: text("timezone"),
+  location: text("location"),
+  linkedin: text("linkedin"),
+  bio: text("bio"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;
+
 export const grades = pgTable(
   "grades",
   {
