@@ -178,6 +178,39 @@ export default async function ActivityPage(props: ActivityPageProps) {
     watchNote = noteRow[0] ?? null;
   }
 
+  type WatchNoteRow = {
+    email: string;
+    notes: string;
+    aiScore: number | null;
+    aiAnalysis: string | null;
+    aiStatus: string | null;
+    updatedAt: Date;
+  };
+  let instructorWatchNotes: WatchNoteRow[] = [];
+  if (item.activityType === "watch" && (isOwner || isAdmin)) {
+    const rows = await db
+      .select({
+        email: users.email,
+        notes: activityNotes.notes,
+        aiScore: activityNotes.aiScore,
+        aiAnalysis: activityNotes.aiAnalysis,
+        aiStatus: activityNotes.aiStatus,
+        updatedAt: activityNotes.updatedAt,
+      })
+      .from(activityNotes)
+      .leftJoin(users, eq(activityNotes.userId, users.id))
+      .where(eq(activityNotes.activityId, activityId))
+      .orderBy(asc(activityNotes.updatedAt));
+    instructorWatchNotes = rows.map((r) => ({
+      email: r.email ?? "",
+      notes: r.notes,
+      aiScore: r.aiScore,
+      aiAnalysis: r.aiAnalysis,
+      aiStatus: r.aiStatus,
+      updatedAt: r.updatedAt,
+    }));
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -207,15 +240,23 @@ export default async function ActivityPage(props: ActivityPageProps) {
       {/* ── Watch ── */}
       {item.activityType === "watch" && (
         <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10 space-y-4">
-          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-            <iframe
-              src={`https://www.youtube.com/embed/${payload.youtubeId}`}
-              title={item.activityTitle}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 h-full w-full rounded-lg border border-border/60"
-            />
-          </div>
+          {user.role === "learner" && isCompleted ? (
+            <div className="flex items-center justify-center rounded-lg border border-dashed border-border/60 bg-background/60 px-6 py-12 text-center">
+              <p className="text-sm text-muted-foreground">
+                You&apos;ve marked this video complete. The video is no longer available for replay.
+              </p>
+            </div>
+          ) : (
+            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${payload.youtubeId}`}
+                title={item.activityTitle}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full rounded-lg border border-border/60"
+              />
+            </div>
+          )}
 
           {user.role === "learner" && (
             <WatchNotesClient
@@ -289,6 +330,63 @@ export default async function ActivityPage(props: ActivityPageProps) {
                   <p className="text-xs italic text-muted-foreground">
                     Save a transcript first to enable quiz generation.
                   </p>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    Learner notes &amp; AI analysis ({instructorWatchNotes.length})
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Score 1–10 against the saved transcript. Visible to instructors only.
+                  </p>
+                </div>
+                {instructorWatchNotes.length === 0 ? (
+                  <p className="text-xs italic text-muted-foreground">No learner notes yet.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {instructorWatchNotes.map((row, i) => (
+                      <li
+                        key={i}
+                        className="rounded-lg border border-border/60 bg-background/60 p-4 space-y-2"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-xs font-semibold text-foreground">{row.email}</p>
+                          <div className="flex items-center gap-2">
+                            {row.aiStatus === "complete" && row.aiScore !== null ? (
+                              <Badge variant="secondary">{row.aiScore}/10</Badge>
+                            ) : row.aiStatus === "pending" ? (
+                              <Badge variant="outline">Analyzing…</Badge>
+                            ) : row.aiStatus === "failed" ? (
+                              <Badge variant="destructive">Analysis failed</Badge>
+                            ) : null}
+                            <p className="text-xs text-muted-foreground">
+                              {row.updatedAt.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Notes
+                          </p>
+                          <p className="whitespace-pre-wrap text-sm text-foreground/90">
+                            {row.notes || "(no notes)"}
+                          </p>
+                        </div>
+                        {row.aiAnalysis && (
+                          <div className="space-y-1">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                              Analysis
+                            </p>
+                            <p className="whitespace-pre-wrap text-sm text-foreground/90">
+                              {row.aiAnalysis}
+                            </p>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </>

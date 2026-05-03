@@ -162,6 +162,11 @@ export const activityNotes = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     notes: text("notes").notNull().default(""),
+    aiScore: integer("ai_score"),
+    aiAnalysis: text("ai_analysis"),
+    aiModel: text("ai_model"),
+    aiStatus: text("ai_status"),
+    aiAnalyzedAt: timestamp("ai_analyzed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

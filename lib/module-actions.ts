@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { asc, desc, eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
@@ -16,6 +17,7 @@ import {
   sections,
   submissions,
 } from "@/lib/schema";
+import { analyzeWatchNotes } from "@/lib/watch-notes-analysis";
 
 export async function createModuleAction(formData: FormData) {
   const title = (formData.get("title") as string | null)?.trim();
@@ -326,7 +328,7 @@ export async function saveWatchNotesAndCompleteAction(formData: FormData) {
   if (existingNote) {
     await db
       .update(activityNotes)
-      .set({ notes, updatedAt: now })
+      .set({ notes, aiStatus: "pending", updatedAt: now })
       .where(eq(activityNotes.id, existingNote.id));
   } else {
     await db.insert(activityNotes).values({
@@ -334,6 +336,7 @@ export async function saveWatchNotesAndCompleteAction(formData: FormData) {
       activityId,
       userId: user.id,
       notes,
+      aiStatus: "pending",
       createdAt: now,
       updatedAt: now,
     });
@@ -344,6 +347,11 @@ export async function saveWatchNotesAndCompleteAction(formData: FormData) {
     activityId,
     userId: user.id,
     completedAt: now,
+  });
+
+  // Run LLM analysis after the response is sent so the learner isn't blocked.
+  after(async () => {
+    await analyzeWatchNotes(activityId, user.id);
   });
 
   redirect(`${back}?notice=Video%20marked%20complete`);

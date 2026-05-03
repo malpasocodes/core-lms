@@ -44,11 +44,26 @@ Helper functions:
 **Middleware (`middleware.ts`):** Clerk middleware gates all routes. Public routes: `/`, `/sign-in(.*)`, `/sign-up(.*)`. Users without an approved status are redirected to `/pending-approval` (checked via `publicMetadata.approved`). Existing users at migration time are grandfathered in.
 
 ### Database Schema (`lib/schema.ts`)
-Core tables: `users`, `courses`, `modules`, `contentItems`, `enrollments`, `assignments`, `submissions`, `grades`, `completions`
+Course structure: `courses` → `modules` → `sections` → `activities` → `assessments` → `mcqQuestions`
 
-- `contentItems.type` enum: `page`, `link`, `normalized_text`
-- `users.role` enum: `learner`, `instructor`, `admin`
+Core tables:
+- `users`, `userProfiles` — accounts and learner profile (preferred name, timezone, location, linkedin, bio)
+- `courses`, `enrollments`, `announcements`
+- `modules`, `sections`, `activities` — course content hierarchy
+- `assessments`, `mcqQuestions`, `submissions`, `grades` — assessments and grading
+- `completions` — per-activity completion tracking (unique on user+activity)
+- `activityNotes` — per-learner notes on an activity (unique on user+activity)
+- `openstaxBooks`, `openstaxChapters`, `openstaxSections` — ingested OpenStax content library
+- `appSettings` — key/value app configuration
+
+Enums:
+- `users.role`: `learner`, `instructor`, `admin`
+- `activities.type`: `watch`, `listen`, `read`, `write`
+- `assessments.type`: `open_ended`, `mcq`
+
+Notes:
 - No sessions table — Clerk handles sessions
+- `submissions.mcqAnswers` stores serialized MCQ responses; `assessments.mcqModel` records the model used to generate questions
 
 ### Server Actions Pattern
 All mutations use Server Actions (no REST API):
@@ -66,11 +81,13 @@ Server actions live in `lib/*-actions.ts` files (e.g., `course-actions.ts`, `enr
 ### Route Structure
 - `/sign-in`, `/sign-up` — Clerk-managed auth pages
 - `/pending-approval` — shown to users awaiting admin approval
-- `/dashboard` — role-specific dashboard
+- `/dashboard`, `/dashboard/profile/edit` — role-specific dashboard and profile editor
 - `/courses`, `/courses/[courseId]` — course browsing and detail
-- `/courses/[courseId]/items/[itemId]` — content item viewer
-- `/courses/[courseId]/assignments/[assignmentId]` — assignment detail
-- `/admin/*` — admin pages: roster, enrollment, content ingestion, seeding
+- `/courses/[courseId]/activities/[activityId]` — activity viewer (watch/listen/read/write)
+- `/courses/[courseId]/activities/[activityId]/assessments/[assessmentId]` — assessment (open-ended or MCQ)
+- `/courses/[courseId]/gradebook` — instructor gradebook
+- `/instructor/enroll` — instructor-managed enrollment
+- `/admin/*` — admin pages: roster, enroll, ingest, openstax, seed, settings
 
 ### UI Components (`components/ui/`)
 All form elements use shadcn/ui for consistency. Use native `<select>` (not shadcn Select) for form submission compatibility.
