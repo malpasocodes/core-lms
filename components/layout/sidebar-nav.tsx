@@ -55,10 +55,12 @@ function SidebarContent({ user, onNavigate }: { user?: { email: string; role: Ro
     pathname === href || (href !== "/" && pathname?.startsWith(href));
 
   const baseItems: NavItem[] = user
-    ? [
-        { label: "Dashboard", href: "/dashboard", icon: DashboardSquare01Icon },
-        { label: "Courses", href: "/courses", icon: BookOpen01Icon },
-      ]
+    ? user.role === "learner"
+      ? [{ label: "Dashboard", href: "/dashboard", icon: DashboardSquare01Icon }]
+      : [
+          { label: "Dashboard", href: "/dashboard", icon: DashboardSquare01Icon },
+          { label: "Courses", href: "/courses", icon: BookOpen01Icon },
+        ]
     : [];
 
   const adminItems: NavItem[] = [

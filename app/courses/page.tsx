@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,10 @@ export default async function CoursesPage() {
         <p className="text-sm text-muted-foreground">Please log in to view courses.</p>
       </div>
     );
+  }
+
+  if (user.role === "learner") {
+    redirect("/dashboard");
   }
 
   const db = await getDb();

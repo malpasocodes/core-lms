@@ -43,6 +43,15 @@ export default async function DashboardPage(props: DashboardPageProps) {
       .limit(1);
     const profile = profileRow[0] ?? null;
 
+    const enrolledRows = await db
+      .select({ id: courses.id, title: courses.title })
+      .from(enrollments)
+      .leftJoin(courses, eq(enrollments.courseId, courses.id))
+      .where(eq(enrollments.userId, user.id));
+    const enrolledCourses = enrolledRows.filter(
+      (c): c is { id: string; title: string } => Boolean(c.id && c.title)
+    );
+
     const displayName =
       profile?.preferredName ||
       clerk?.firstName ||
@@ -70,6 +79,32 @@ export default async function DashboardPage(props: DashboardPageProps) {
             {error}
           </div>
         )}
+
+        <div className="rounded-2xl border border-border/70 bg-card/80 p-6 md:p-8">
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold text-foreground">Your courses</h2>
+            <p className="text-sm text-muted-foreground">
+              {enrolledCourses.length === 0
+                ? "You are not enrolled in any courses yet."
+                : `${enrolledCourses.length} ${enrolledCourses.length === 1 ? "course" : "courses"}`}
+            </p>
+          </div>
+          {enrolledCourses.length > 0 && (
+            <ul className="mt-6 divide-y divide-border/60 rounded-lg border border-border/60 bg-background/60">
+              {enrolledCourses.map((course) => (
+                <li key={course.id}>
+                  <Link
+                    href={`/courses/${course.id}`}
+                    className="flex items-center justify-between px-4 py-3 text-sm hover:bg-background/80 transition-colors"
+                  >
+                    <span className="font-medium text-foreground">{course.title}</span>
+                    <span className="text-xs text-muted-foreground">Open →</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
           <ProfileCard
