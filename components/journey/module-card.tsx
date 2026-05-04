@@ -10,19 +10,42 @@ const MODULE_STATUS_COPY: Record<JourneyModule["status"], string> = {
 
 const MODULE_STATUS_CLASSES: Record<JourneyModule["status"], string> = {
   not_started: "bg-slate-100 text-slate-600 border-slate-200",
-  in_progress: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  in_progress: "bg-emerald-100 text-emerald-800 border-emerald-300",
   completed: "bg-purple-50 text-purple-700 border-purple-200",
 };
 
+const CARD_BASE = "rounded-2xl border p-6 shadow-sm md:p-8 transition-colors";
+
+const CARD_BY_STATUS: Record<JourneyModule["status"], string> = {
+  not_started: "border-slate-200 bg-white",
+  in_progress: "border-emerald-300 bg-white ring-1 ring-emerald-200",
+  completed: "border-slate-200 bg-slate-50/60",
+};
+
 export function ModuleCard({ module }: { module: JourneyModule }) {
+  const isActive = module.status === "in_progress";
+  const isComplete = module.status === "completed";
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+    <article className={cn(CARD_BASE, CARD_BY_STATUS[module.status])}>
       <header className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+          <p
+            className={cn(
+              "text-xs font-semibold uppercase tracking-[0.3em]",
+              isActive ? "text-emerald-700" : "text-slate-400"
+            )}
+          >
             Module {module.order}
+            {isActive && " · Active"}
           </p>
-          <h2 className="text-xl font-semibold text-slate-900">{module.title}</h2>
+          <h2
+            className={cn(
+              "text-xl font-semibold",
+              isComplete ? "text-slate-700" : "text-slate-900"
+            )}
+          >
+            {module.title}
+          </h2>
           {module.totalActivities > 0 && (
             <p className="text-xs text-slate-500">
               {module.completedActivities} of {module.totalActivities} complete
