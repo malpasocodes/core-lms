@@ -186,7 +186,7 @@ export default async function GradebookPage({ params }: Props) {
         {assessmentList.length > 0 && learnerList.length > 0 && (
           <div className="flex items-center gap-4 pt-1 text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
-              <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-100 border border-green-300" />
+              <span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-100 border border-emerald-300" />
               Graded ≥ 70
             </span>
             <span className="flex items-center gap-1.5">
@@ -213,7 +213,7 @@ export default async function GradebookPage({ params }: Props) {
 }
 
 function scoreColor(score: number) {
-  if (score >= 70) return "text-green-700";
+  if (score >= 70) return "text-emerald-700";
   if (score >= 50) return "text-yellow-700";
   return "text-red-700";
 }
@@ -234,7 +234,7 @@ function ScoreCell({ cell }: { cell: { submittedAt: Date; score: number | null }
       className={cn(
         "inline-block rounded px-2 py-0.5 text-xs font-semibold",
         cell.score >= 70
-          ? "bg-green-50 text-green-700 border border-green-200"
+          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
           : cell.score >= 50
           ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
           : "bg-red-50 text-red-700 border border-red-200"

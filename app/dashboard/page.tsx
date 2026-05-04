@@ -104,7 +104,7 @@ export default async function DashboardPage(props: DashboardPageProps) {
         </div>
 
         {notice && (
-          <div className="rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
             {notice}
           </div>
         )}

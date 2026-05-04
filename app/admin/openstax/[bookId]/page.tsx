@@ -78,7 +78,7 @@ export default async function OpenstaxBookPage({
       </div>
 
       {sp.notice && (
-        <div className="rounded-md bg-green-500/10 border border-green-500/20 p-3 text-sm text-green-600 dark:text-green-400">
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
           {sp.notice}
         </div>
       )}

@@ -473,7 +473,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
         </div>
       )}
       {notice && (
-        <div className="rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
           {notice}
         </div>
       )}

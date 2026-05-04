@@ -406,7 +406,7 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
                       {opts.map((opt, j) => (
                         <p
                           key={j}
-                          className={`text-sm ${j === q.correctIndex ? "text-green-600 dark:text-green-400 font-medium" : "text-slate-500"}`}
+                          className={`text-sm ${j === q.correctIndex ? "text-emerald-700 font-medium" : "text-slate-500"}`}
                         >
                           {j === q.correctIndex ? "✓ " : "○ "}
                           {opt}
@@ -514,7 +514,7 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
                                         <span
                                           className={
                                             isCorrect
-                                              ? "text-green-600 dark:text-green-400"
+                                              ? "text-emerald-700"
                                               : "text-red-600 dark:text-red-400"
                                           }
                                         >
@@ -527,7 +527,7 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
                                             key={j}
                                             className={`text-sm ${
                                               j === q.correctIndex
-                                                ? "text-green-600 dark:text-green-400 font-medium"
+                                                ? "text-emerald-700 font-medium"
                                                 : j === chosen && !isCorrect
                                                   ? "text-red-600 dark:text-red-400 line-through"
                                                   : "text-slate-500"
