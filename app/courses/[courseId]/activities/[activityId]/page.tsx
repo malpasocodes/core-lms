@@ -25,6 +25,7 @@ import {
 } from "@/lib/module-actions";
 import { WriteActivityClient } from "@/components/write-activity-client";
 import { WatchNotesClient } from "@/components/watch-notes-client";
+import { getCourseJourney } from "@/lib/journey";
 
 type ActivityPageProps = {
   params: Promise<{ courseId: string; activityId: string }>;
@@ -106,6 +107,25 @@ export default async function ActivityPage(props: ActivityPageProps) {
   const idx = siblings.findIndex((s) => s.id === activityId);
   const prev = idx > 0 ? siblings[idx - 1] : null;
   const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : null;
+
+  // Compute the next station across the whole course (cross-section, cross-module)
+  // for the post-completion CTA. Only relevant for learners.
+  let courseNextStation: { id: string; label: string; href: string } | null = null;
+  let courseAllComplete = false;
+  if (user.role === "learner") {
+    const journey = await getCourseJourney(courseId, user.id);
+    const allStations = journey.modules.flatMap((m) => m.stations);
+    const i = allStations.findIndex((s) => s.id === activityId);
+    const candidate = i >= 0 ? allStations[i + 1] : null;
+    if (candidate?.href) {
+      courseNextStation = { id: candidate.id, label: candidate.label, href: candidate.href };
+    } else if (
+      journey.totalActivities > 0 &&
+      journey.completedActivities === journey.totalActivities
+    ) {
+      courseAllComplete = true;
+    }
+  }
 
   const payload = item.activityPayload ? JSON.parse(item.activityPayload) : {};
 
@@ -237,6 +257,74 @@ export default async function ActivityPage(props: ActivityPageProps) {
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
           {error}
+        </div>
+      )}
+
+      {user.role === "learner" && isCompleted && courseNextStation && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-0.5">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700">
+                <svg
+                  viewBox="0 0 16 16"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="3,8 7,12 13,4" />
+                </svg>
+                Completed · Up next
+              </p>
+              <p className="text-base font-semibold text-slate-900">
+                {courseNextStation.label}
+              </p>
+            </div>
+            <Link
+              href={courseNextStation.href}
+              className="inline-flex shrink-0 items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-white shadow-sm transition-colors hover:bg-emerald-700"
+            >
+              Next →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {user.role === "learner" && isCompleted && courseAllComplete && (
+        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-600 text-white">
+              <svg
+                viewBox="0 0 16 16"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="3,8 7,12 13,4" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-purple-700">
+                Course complete
+              </p>
+              <p className="text-sm text-slate-900">
+                You finished every activity in this course.{" "}
+                <Link
+                  href={`/courses/${courseId}`}
+                  className="font-semibold underline hover:text-emerald-700"
+                >
+                  Back to course
+                </Link>
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
