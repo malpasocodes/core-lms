@@ -2,11 +2,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import { currentUser } from "@clerk/nextjs/server";
-import { eq, count } from "drizzle-orm";
+import { count, desc, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { courses, enrollments, userProfiles } from "@/lib/schema";
+import { announcements, courses, enrollments, userProfiles, users } from "@/lib/schema";
 import { CourseList } from "./_components/course-list";
 import { ProfileCard } from "./_components/profile-card";
 import { getCourseJourney } from "@/lib/journey";
@@ -65,6 +65,26 @@ export default async function DashboardPage(props: DashboardPageProps) {
         return { course: c, journey, activeModule };
       })
     );
+
+    const enrolledCourseIds = enrolledCourses.map((c) => c.id);
+    const recentAnnouncements =
+      enrolledCourseIds.length > 0
+        ? await db
+            .select({
+              id: announcements.id,
+              body: announcements.body,
+              createdAt: announcements.createdAt,
+              courseId: announcements.courseId,
+              courseTitle: courses.title,
+              authorEmail: users.email,
+            })
+            .from(announcements)
+            .leftJoin(courses, eq(announcements.courseId, courses.id))
+            .leftJoin(users, eq(announcements.authorId, users.id))
+            .where(inArray(announcements.courseId, enrolledCourseIds))
+            .orderBy(desc(announcements.createdAt))
+            .limit(3)
+        : [];
 
     const displayName =
       profile?.preferredName ||
@@ -207,12 +227,50 @@ export default async function DashboardPage(props: DashboardPageProps) {
             bio={profile?.bio ?? null}
           />
 
-          <div className="rounded-2xl border border-border/70 bg-card/80 p-6 md:p-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-foreground">Announcements</h2>
-              <p className="text-sm text-muted-foreground">Latest news and updates</p>
+              <h2 className="text-xl font-semibold text-slate-900">Announcements</h2>
+              <p className="text-sm text-slate-500">
+                {recentAnnouncements.length === 0
+                  ? "Latest news and updates"
+                  : `Latest from your ${enrolledCourses.length === 1 ? "course" : "courses"}`}
+              </p>
             </div>
-            <p className="mt-6 text-sm text-muted-foreground">No announcements yet.</p>
+            {recentAnnouncements.length === 0 ? (
+              <p className="mt-6 text-sm text-slate-500">No announcements yet.</p>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {recentAnnouncements.map((a) => (
+                  <li
+                    key={a.id}
+                    className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <Link
+                        href={`/courses/${a.courseId}`}
+                        className="text-xs font-semibold uppercase tracking-[0.15em] text-emerald-700 hover:text-emerald-800"
+                      >
+                        {a.courseTitle ?? "Course"}
+                      </Link>
+                      <time className="text-[11px] text-slate-400">
+                        {a.createdAt.toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </time>
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800 line-clamp-3">
+                      {a.body}
+                    </p>
+                    {a.authorEmail && (
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        Posted by {a.authorEmail}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>
