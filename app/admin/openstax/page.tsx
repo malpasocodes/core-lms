@@ -31,9 +31,9 @@ export default async function AdminOpenstaxPage({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Admin</p>
-        <h1 className="text-3xl font-semibold text-foreground">OpenStax Library</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Admin</p>
+        <h1 className="text-3xl font-semibold text-slate-900">OpenStax Library</h1>
+        <p className="text-sm text-slate-500">
           Ingest OpenStax textbooks into the content library.
         </p>
       </div>
@@ -51,19 +51,19 @@ export default async function AdminOpenstaxPage({
 
       {/* Ingested books */}
       {ingested.length > 0 && (
-        <div className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-5">
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
           <div>
-            <p className="text-sm font-semibold text-foreground">Ingested Books</p>
-            <p className="text-xs text-muted-foreground">Stored in content library.</p>
+            <p className="text-sm font-semibold text-slate-900">Ingested Books</p>
+            <p className="text-xs text-slate-500">Stored in content library.</p>
           </div>
-          <div className="overflow-hidden rounded-md border border-border/70">
-            <div className="grid grid-cols-[2fr_1fr_0.5fr_auto] bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="overflow-hidden rounded-md border border-slate-200">
+            <div className="grid grid-cols-[2fr_1fr_0.5fr_auto] bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <span>Title</span>
               <span>Subject</span>
               <span>Chapters</span>
               <span />
             </div>
-            <div className="divide-y divide-border bg-background/80 text-sm text-foreground">
+            <div className="divide-y divide-slate-200 bg-white text-sm text-slate-900">
               {ingested.map((book) => (
                 <div
                   key={book.id}
@@ -75,11 +75,11 @@ export default async function AdminOpenstaxPage({
                   >
                     {book.title}
                   </Link>
-                  <span className="text-muted-foreground">{book.subject ?? "—"}</span>
+                  <span className="text-slate-500">{book.subject ?? "—"}</span>
                   <span className="font-semibold">{book.chapterCount ?? "—"}</span>
                   <Link
                     href={`/admin/openstax/${book.id}`}
-                    className="text-xs text-muted-foreground underline"
+                    className="text-xs text-slate-500 underline"
                   >
                     View
                   </Link>
@@ -91,10 +91,10 @@ export default async function AdminOpenstaxPage({
       )}
 
       {/* Available catalog */}
-      <div className="space-y-3 rounded-2xl border border-border/70 bg-card/80 p-5">
+      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
         <div>
-          <p className="text-sm font-semibold text-foreground">Available Books</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm font-semibold text-slate-900">Available Books</p>
+          <p className="text-xs text-slate-500">
             Select a book to ingest its chapters and sections.
           </p>
         </div>
@@ -102,7 +102,7 @@ export default async function AdminOpenstaxPage({
         {catalogError ? (
           <p className="text-sm text-destructive">{catalogError}</p>
         ) : available.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-slate-500">
             {catalog.length === 0
               ? "No books found in the OpenStax catalog."
               : "All available books have been ingested."}
@@ -112,12 +112,12 @@ export default async function AdminOpenstaxPage({
             {available.map((book) => (
               <div
                 key={book.slug}
-                className="flex items-center justify-between gap-4 rounded-md border border-border/60 bg-background/60 px-3 py-2"
+                className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-white px-3 py-2"
               >
                 <div>
                   <p className="text-sm font-semibold">{book.title}</p>
                   {book.subject && (
-                    <p className="text-xs text-muted-foreground">{book.subject}</p>
+                    <p className="text-xs text-slate-500">{book.subject}</p>
                   )}
                 </div>
                 <form action={ingestOpenstaxBookAction}>

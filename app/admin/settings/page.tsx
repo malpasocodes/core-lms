@@ -17,9 +17,9 @@ export default async function AdminSettingsPage({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Admin</p>
-        <h1 className="text-3xl font-semibold text-foreground">Settings</h1>
-        <p className="text-sm text-muted-foreground">Configure application-wide preferences.</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Admin</p>
+        <h1 className="text-3xl font-semibold text-slate-900">Settings</h1>
+        <p className="text-sm text-slate-500">Configure application-wide preferences.</p>
       </div>
 
       {params.error && (

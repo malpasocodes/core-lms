@@ -33,9 +33,9 @@ export default async function AdminIngestPage({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Admin</p>
-        <h1 className="text-3xl font-semibold text-foreground">Ingest Course</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Admin</p>
+        <h1 className="text-3xl font-semibold text-slate-900">Ingest Course</h1>
+        <p className="text-sm text-slate-500">
           Import a normalized JSON file to create a new course with modules and content.
         </p>
       </div>
@@ -81,7 +81,7 @@ export default async function AdminIngestPage({
                 ))}
               </select>
               {instructors.length === 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-slate-500">
                   No instructors found. Create an instructor in Roster first.
                 </p>
               )}
@@ -97,7 +97,7 @@ export default async function AdminIngestPage({
                 placeholder='{"schema_version": "1.0", "source": {...}, "chapters": [...]}'
                 className="font-mono text-xs"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-slate-500">
                 Expected format: {"{"}&quot;source&quot;: {"{"}&quot;title&quot;: &quot;...&quot;{"}"},
                 &quot;chapters&quot;: [{"{"}...{"}"}]{"}"}
               </p>
@@ -115,7 +115,7 @@ export default async function AdminIngestPage({
           <CardTitle>Expected JSON Structure</CardTitle>
         </CardHeader>
         <CardContent>
-          <pre className="text-xs bg-muted/50 p-4 rounded-md overflow-x-auto">
+          <pre className="text-xs bg-slate-100 p-4 rounded-md overflow-x-auto">
 {`{
   "schema_version": "1.0",
   "source": {

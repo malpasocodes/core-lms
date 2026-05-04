@@ -51,19 +51,19 @@ export default async function OpenstaxBookPage({
         <div>
           <Link
             href="/admin/openstax"
-            className="text-xs text-muted-foreground underline"
+            className="text-xs text-slate-500 underline"
           >
             ← OpenStax Library
           </Link>
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-1">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500 mt-1">
             Admin · OpenStax
           </p>
-          <h1 className="text-3xl font-semibold text-foreground">{book.title}</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">{book.title}</h1>
           {book.subject && (
-            <p className="text-sm text-muted-foreground">{book.subject}</p>
+            <p className="text-sm text-slate-500">{book.subject}</p>
           )}
           {book.ingestedAt && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-500">
               Ingested {new Date(book.ingestedAt).toLocaleDateString()}
             </p>
           )}
@@ -90,23 +90,23 @@ export default async function OpenstaxBookPage({
 
       <div className="space-y-3">
         {sectionsByChapter.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No chapters found.</p>
+          <p className="text-sm text-slate-500">No chapters found.</p>
         ) : (
           sectionsByChapter.map(({ chapter, sections }) => (
             <div
               key={chapter.id}
-              className="rounded-xl border border-border/70 bg-card/80 p-4 space-y-2"
+              className="rounded-xl border border-slate-200 bg-white p-4 space-y-2"
             >
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
                   Chapter {chapter.chapterNumber}
                 </p>
-                <p className="text-sm font-semibold text-foreground">{chapter.title}</p>
+                <p className="text-sm font-semibold text-slate-900">{chapter.title}</p>
               </div>
               {sections.length > 0 && (
-                <div className="pl-3 border-l border-border/50 space-y-1">
+                <div className="pl-3 border-l border-slate-200 space-y-1">
                   {sections.map((s) => (
-                    <p key={s.id} className="text-xs text-muted-foreground">
+                    <p key={s.id} className="text-xs text-slate-500">
                       {s.title}
                     </p>
                   ))}

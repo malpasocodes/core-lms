@@ -40,18 +40,18 @@ export function EditUserButton({ userId, email, role, createdAt }: EditUserButto
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-3">
+          <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Email</span>
-              <span className="font-medium text-foreground">{email}</span>
+              <span className="text-slate-500">Email</span>
+              <span className="font-medium text-slate-900">{email}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Current Role</span>
-              <span className="font-medium capitalize text-foreground">{role}</span>
+              <span className="text-slate-500">Current Role</span>
+              <span className="font-medium capitalize text-slate-900">{role}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Created</span>
-              <span className="font-medium text-foreground">{createdAt.toLocaleDateString()}</span>
+              <span className="text-slate-500">Created</span>
+              <span className="font-medium text-slate-900">{createdAt.toLocaleDateString()}</span>
             </div>
           </div>
 
@@ -70,7 +70,7 @@ export function EditUserButton({ userId, email, role, createdAt }: EditUserButto
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-500">
               Password management is handled through Clerk. Users can reset their own passwords.
             </p>
             <DialogFooter>

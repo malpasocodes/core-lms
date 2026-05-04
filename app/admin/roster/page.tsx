@@ -31,11 +31,11 @@ function ViewTab({ view, active, label, count }: { view: string; active: boolean
     <Link
       href={`/admin/roster?view=${view}`}
       className={`relative px-4 py-2 text-sm font-medium transition-colors ${
-        active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+        active ? "text-slate-900" : "text-slate-500 hover:text-slate-900"
       }`}
     >
       {label}
-      {count !== undefined && <span className="ml-1.5 text-xs text-muted-foreground">({count})</span>}
+      {count !== undefined && <span className="ml-1.5 text-xs text-slate-500">({count})</span>}
       {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />}
     </Link>
   );
@@ -46,11 +46,11 @@ function RoleTabLink({ role, active, count }: { role: Role; active: boolean; cou
     <Link
       href={`/admin/roster?view=roster&role=${role}`}
       className={`relative px-3 py-2 text-xs font-medium transition-colors ${
-        active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+        active ? "text-slate-900" : "text-slate-500 hover:text-slate-900"
       }`}
     >
       <span className="capitalize">{role}s</span>
-      <span className="ml-1.5 text-xs text-muted-foreground">({count})</span>
+      <span className="ml-1.5 text-xs text-slate-500">({count})</span>
       {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />}
     </Link>
   );
@@ -94,13 +94,13 @@ export default async function AdminRosterPage({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Admin</p>
-        <h1 className="text-3xl font-semibold text-foreground">Roster</h1>
-        <p className="text-sm text-muted-foreground">View all users and manage accounts.</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Admin</p>
+        <h1 className="text-3xl font-semibold text-slate-900">Roster</h1>
+        <p className="text-sm text-slate-500">View all users and manage accounts.</p>
       </div>
 
       {/* Main View Tabs */}
-      <div className="flex items-center border-b border-border/60">
+      <div className="flex items-center border-b border-slate-200">
         <ViewTab view="roster" active={activeView === "roster"} label="View Roster" count={approvedUsers.length} />
         <ViewTab view="approve" active={activeView === "approve"} label="Approve Users" count={pendingUsers.length} />
       </div>
@@ -108,8 +108,8 @@ export default async function AdminRosterPage({
       {activeView === "roster" ? (
         /* View Roster */
         <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-          <div className="rounded-2xl border border-border/70 bg-card/80 p-4">
-            <div className="flex items-center border-b border-border/60">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center border-b border-slate-200">
               {ROLES.map((role) => (
                 <RoleTabLink
                   key={role}
@@ -120,17 +120,17 @@ export default async function AdminRosterPage({
               ))}
             </div>
 
-            <div className="mt-3 divide-y divide-border overflow-hidden rounded-md border border-border/60 bg-background/80 text-sm">
+            <div className="mt-3 divide-y divide-slate-200 overflow-hidden rounded-md border border-slate-200 bg-white text-sm">
               {filteredUsers.length === 0 ? (
-                <div className="px-3 py-4 text-center text-muted-foreground">
+                <div className="px-3 py-4 text-center text-slate-500">
                   No {activeRole}s found.
                 </div>
               ) : (
                 filteredUsers.map((user) => (
                   <div key={user.id} className="flex items-center justify-between px-3 py-2">
                     <div>
-                      <p className="font-medium text-foreground">{user.email}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium text-slate-900">{user.email}</p>
+                      <p className="text-xs text-slate-500">
                         {user.createdAt.toLocaleDateString()}
                       </p>
                     </div>
@@ -149,8 +149,8 @@ export default async function AdminRosterPage({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/70 bg-card/80 p-4">
-            <h2 className="text-lg font-semibold text-foreground">Add user</h2>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <h2 className="text-lg font-semibold text-slate-900">Add user</h2>
             <form action={createUserAction} className="mt-3 space-y-3 text-sm">
               <div className="space-y-1">
                 <Label htmlFor="email">Email</Label>
@@ -178,22 +178,22 @@ export default async function AdminRosterPage({
         </div>
       ) : (
         /* Approve Users */
-        <div className="rounded-2xl border border-border/70 bg-card/80 p-4">
-          <p className="mb-4 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="mb-4 text-sm text-slate-500">
             Users awaiting approval. Select a role and approve or reject each user.
           </p>
 
-          <div className="divide-y divide-border overflow-hidden rounded-md border border-border/60 bg-background/80 text-sm">
+          <div className="divide-y divide-slate-200 overflow-hidden rounded-md border border-slate-200 bg-white text-sm">
             {pendingUsers.length === 0 ? (
-              <div className="px-3 py-6 text-center text-muted-foreground">
+              <div className="px-3 py-6 text-center text-slate-500">
                 No users awaiting approval.
               </div>
             ) : (
               pendingUsers.map((user) => (
                 <div key={user.id} className="flex items-center justify-between gap-4 px-3 py-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-foreground">{user.email}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="truncate font-medium text-slate-900">{user.email}</p>
+                    <p className="text-xs text-slate-500">
                       Signed up {user.createdAt.toLocaleDateString()}
                     </p>
                   </div>

@@ -45,9 +45,9 @@ export default async function AdminEnrollPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Admin</p>
-        <h1 className="text-3xl font-semibold text-foreground">Enroll</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Admin</p>
+        <h1 className="text-3xl font-semibold text-slate-900">Enroll</h1>
+        <p className="text-sm text-slate-500">
           Enroll an existing learner into an existing course.
         </p>
       </div>
@@ -115,29 +115,29 @@ export default async function AdminEnrollPage() {
         </CardHeader>
         <CardContent>
           {enrollmentMap.every((c) => c.learners.length === 0) ? (
-            <p className="text-sm text-muted-foreground">No enrollments yet.</p>
+            <p className="text-sm text-slate-500">No enrollments yet.</p>
           ) : (
             <div className="space-y-2">
               {enrollmentMap.map((course) => (
                 <details
                   key={course.id}
-                  className="overflow-hidden rounded-md border border-border/70 bg-background/80 text-sm text-foreground"
+                  className="overflow-hidden rounded-md border border-slate-200 bg-white text-sm text-slate-900"
                 >
                   <summary className="flex cursor-pointer items-center justify-between px-3 py-2">
                     <div className="space-y-0.5">
                       <span className="font-semibold">{course.title}</span>
-                      <p className="text-[11px] text-muted-foreground font-mono">{course.id}</p>
+                      <p className="text-[11px] text-slate-500 font-mono">{course.id}</p>
                     </div>
-                    <span className="text-xs font-semibold text-muted-foreground">
+                    <span className="text-xs font-semibold text-slate-500">
                       {course.learners.length} enrolled
                     </span>
                   </summary>
                   {course.learners.length === 0 ? (
-                    <div className="border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                    <div className="border-t border-slate-200 px-3 py-2 text-xs text-slate-500">
                       No learners enrolled.
                     </div>
                   ) : (
-                    <ul className="divide-y divide-border border-t border-border/70">
+                    <ul className="divide-y divide-slate-200 border-t border-slate-200">
                       {course.learners.map((email) => (
                         <li key={email} className="px-3 py-2 text-sm">
                           {email}
