@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CoreLMS
+
+A minimalist Learning Management System demonstrating that core LMS functionality is a commodity. Built to show how much of a traditional LMS can be replaced by a small, modern stack.
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router) with React 19 Server Components
+- **Language:** TypeScript
+- **Database:** PostgreSQL on Neon with Drizzle ORM
+- **Auth:** Clerk (roles in `publicMetadata.role`)
+- **Styling:** Tailwind CSS 4 with Radix UI / shadcn components
+- **Icons:** HugeIcons
+
+## Features
+
+- Role-based access for **learners**, **instructors**, and **admins**
+- Course → module → section → activity content hierarchy
+- Activity types: watch, listen, read, write
+- Assessments: open-ended and auto-graded MCQ
+- Per-activity completions and learner notes
+- Instructor gradebook and managed enrollment
+- Admin tools for roster, ingestion, and app settings
+- OpenStax content library ingestion
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- A PostgreSQL database (Neon recommended)
+- A Clerk account for authentication
+
+### Setup
 
 ```bash
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env.local   # then fill in the values below
+
+# Run database migrations
+npm run db:migrate
+
+# Start the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to use the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+DATABASE_URL=                          # Neon Postgres connection string
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev          # Start dev server
+npm run build        # Production build
+npm run lint         # Run ESLint
+npm run db:generate  # Generate Drizzle migrations from schema changes
+npm run db:migrate   # Apply migrations to the database
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+app/                # Next.js App Router pages
+components/ui/      # Reusable UI components (shadcn-based)
+lib/                # Server actions, auth, schema, db helpers
+drizzle/            # SQL migration files
+scripts/            # Database migration and ingestion scripts
+docs/               # UI/UX specs and roadmaps
+```
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Optimized for [Vercel](https://vercel.com). Set the environment variables above in your project settings and deploy from the GitHub repo.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
