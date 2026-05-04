@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,6 +90,25 @@ export default async function CourseDetailPage(props: CoursePageProps) {
   // Learners get the Journey view; instructors/admins keep the curriculum/edit view below.
   if (user.role === "learner") {
     const journey = await getCourseJourney(courseId, user.id);
+    const currentStation = journey.modules
+      .flatMap((m) => m.stations)
+      .find((s) => s.status === "current");
+    const allComplete =
+      journey.totalActivities > 0 &&
+      journey.completedActivities === journey.totalActivities;
+    const learnerAnnouncements = await db
+      .select({
+        id: announcements.id,
+        body: announcements.body,
+        createdAt: announcements.createdAt,
+        authorEmail: users.email,
+      })
+      .from(announcements)
+      .leftJoin(users, eq(announcements.authorId, users.id))
+      .where(eq(announcements.courseId, courseId))
+      .orderBy(desc(announcements.createdAt))
+      .limit(3);
+
     return (
       <div className="space-y-6">
         <div className="space-y-2">
@@ -116,6 +136,92 @@ export default async function CourseDetailPage(props: CoursePageProps) {
         {error && (
           <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
             {error}
+          </div>
+        )}
+
+        {currentStation?.href ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm md:p-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700">
+                  Continue where you left off
+                </p>
+                <p className="text-lg font-semibold text-slate-900">
+                  {currentStation.label}
+                </p>
+              </div>
+              <Link
+                href={currentStation.href}
+                className="inline-flex shrink-0 items-center justify-center rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold uppercase tracking-[0.15em] text-white shadow-sm transition-colors hover:bg-emerald-700"
+              >
+                Continue →
+              </Link>
+            </div>
+          </div>
+        ) : allComplete ? (
+          <div className="rounded-2xl border border-purple-200 bg-purple-50 p-6 shadow-sm md:p-8">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-600 text-white">
+                <svg
+                  viewBox="0 0 16 16"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="3,8 7,12 13,4" />
+                </svg>
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-purple-700">
+                  Course complete
+                </p>
+                <p className="text-base font-semibold text-slate-900">
+                  You finished every activity in this course.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {learnerAnnouncements.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold text-slate-900">Announcements</h2>
+              <p className="text-xs text-slate-500">
+                Latest from your instructor
+              </p>
+            </div>
+            <ul className="mt-4 space-y-3">
+              {learnerAnnouncements.map((a) => (
+                <li
+                  key={a.id}
+                  className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    {a.authorEmail && (
+                      <p className="text-xs font-semibold text-slate-700">
+                        {a.authorEmail}
+                      </p>
+                    )}
+                    <time className="text-[11px] text-slate-400">
+                      {a.createdAt.toLocaleString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </time>
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
+                    {a.body}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
