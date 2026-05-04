@@ -88,9 +88,9 @@ export default async function ModulesPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Courses</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Modules</h1>
-        <p className="text-sm text-muted-foreground">View and manage modules for your courses.</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Courses</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Modules</h1>
+        <p className="text-sm text-slate-500">View and manage modules for your courses.</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -99,20 +99,20 @@ export default async function ModulesPage() {
             <CardTitle>View modules</CardTitle>
             <CardDescription>Modules grouped by course.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-foreground">
+          <CardContent className="space-y-3 text-sm text-slate-900">
             {moduleList.length === 0 ? (
-              <p className="text-muted-foreground">No modules found.</p>
+              <p className="text-slate-500">No modules found.</p>
             ) : (
-              <div className="divide-y divide-border rounded-md border border-border/70 bg-background/80">
+              <div className="divide-y divide-border rounded-md border border-slate-200 bg-white">
                 {moduleList.map((mod) => (
                   <div key={mod.id} className="flex items-center justify-between px-3 py-2">
                     <div className="space-y-0.5">
-                      <p className="text-sm font-semibold text-foreground">{mod.title}</p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-sm font-semibold text-slate-900">{mod.title}</p>
+                      <p className="text-[11px] text-slate-500">
                         {mod.courseTitle} • Order {mod.order}
                       </p>
                     </div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                       #{mod.order}
                     </span>
                   </div>
@@ -225,16 +225,16 @@ export default async function ModulesPage() {
             <CardTitle>View sections</CardTitle>
             <CardDescription>Sections grouped by module.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-foreground">
+          <CardContent className="space-y-3 text-sm text-slate-900">
             {sectionList.length === 0 ? (
-              <p className="text-muted-foreground">No sections found.</p>
+              <p className="text-slate-500">No sections found.</p>
             ) : (
-              <div className="divide-y divide-border rounded-md border border-border/70 bg-background/80">
+              <div className="divide-y divide-border rounded-md border border-slate-200 bg-white">
                 {sectionList.map((sec) => (
                   <div key={sec.id} className="flex items-center justify-between px-3 py-2">
                     <div className="space-y-0.5">
-                      <p className="text-sm font-semibold text-foreground">{sec.title}</p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-sm font-semibold text-slate-900">{sec.title}</p>
+                      <p className="text-[11px] text-slate-500">
                         {sec.courseTitle} • {sec.moduleTitle}
                       </p>
                     </div>

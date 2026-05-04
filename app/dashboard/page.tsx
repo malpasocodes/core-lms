@@ -95,10 +95,10 @@ export default async function DashboardPage(props: DashboardPageProps) {
     return (
       <div className="space-y-8">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
             Dashboard
           </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-4xl font-semibold tracking-tight text-slate-900">
             Welcome back, {displayName}.
           </h1>
         </div>

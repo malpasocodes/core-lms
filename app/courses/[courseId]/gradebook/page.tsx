@@ -104,8 +104,8 @@ export default async function GradebookPage({ params }: Props) {
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Course</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{course.title}</h1>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Course</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{course.title}</h1>
         </div>
         <Suspense fallback={<div className="h-9" />}>
           <CourseTabs courseId={courseId} canEdit={true} />

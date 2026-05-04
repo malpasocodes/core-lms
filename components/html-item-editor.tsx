@@ -194,7 +194,7 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
           className={`px-3 py-1 text-sm rounded-md border transition-colors ${
             mode === "preview"
               ? "bg-foreground text-background border-foreground"
-              : "border-border text-muted-foreground hover:text-foreground"
+              : "border-slate-200 text-slate-500 hover:text-slate-900"
           }`}
         >
           Preview
@@ -205,7 +205,7 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
           className={`px-3 py-1 text-sm rounded-md border transition-colors ${
             mode === "edit"
               ? "bg-foreground text-background border-foreground"
-              : "border-border text-muted-foreground hover:text-foreground"
+              : "border-slate-200 text-slate-500 hover:text-slate-900"
           }`}
         >
           Edit
@@ -213,7 +213,7 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
       </div>
 
       {mode === "preview" && (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
+        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 md:px-10 md:py-10">
           <div
             className="prose prose-neutral dark:prose-invert max-w-none [&_img]:outline [&_img]:outline-2 [&_img]:outline-dashed [&_img]:outline-amber-500 [&_img]:outline-offset-2"
             dangerouslySetInnerHTML={{ __html: content }}
@@ -223,8 +223,8 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
 
       {mode === "edit" && (
         <>
-          <div className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2">
-            <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+            <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
               Insert image
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -238,24 +238,24 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
                 {uploading ? "Uploading…" : "Upload image"}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-500">
               PNG or JPEG, up to 5 MB. The &lt;img&gt; tag is inserted at the cursor.
             </p>
             {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
           </div>
 
           {images.length > 0 && (
-            <div className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2">
-              <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+              <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
                 Images in content ({images.length})
               </p>
               <ul className="space-y-2">
                 {images.map((ref) => (
                   <li
                     key={ref.key}
-                    className="flex items-center gap-3 rounded border border-border/60 bg-card/70 p-2"
+                    className="flex items-center gap-3 rounded border border-slate-200 bg-white p-2"
                   >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border/60 bg-muted/40">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-100">
                       {ref.src ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -264,23 +264,23 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
                           className="h-full w-full object-contain"
                         />
                       ) : (
-                        <span className="text-xs text-muted-foreground">?</span>
+                        <span className="text-xs text-slate-500">?</span>
                       )}
                     </div>
                     <div className="min-w-0 flex-1 space-y-0.5">
-                      <p className="text-xs font-semibold text-foreground">
+                      <p className="text-xs font-semibold text-slate-900">
                         Image {ref.index}
                         {ref.figureStart !== null && (
-                          <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
                             in figure
                           </span>
                         )}
                       </p>
-                      <p className="truncate text-xs text-muted-foreground" title={ref.src}>
+                      <p className="truncate text-xs text-slate-500" title={ref.src}>
                         {ref.src || "(no src)"}
                       </p>
                       {ref.alt && (
-                        <p className="truncate text-[11px] italic text-muted-foreground">
+                        <p className="truncate text-[11px] italic text-slate-500">
                           alt: {ref.alt}
                         </p>
                       )}
@@ -325,7 +325,7 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
             <input type="hidden" name="redirectTo" value={redirectTo} />
 
             <div className="space-y-1">
-              <label className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
+              <label className="text-xs uppercase tracking-[0.15em] text-slate-500">
                 Title
               </label>
               <input
@@ -337,7 +337,7 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
+              <label className="text-xs uppercase tracking-[0.15em] text-slate-500">
                 HTML content
               </label>
               <textarea

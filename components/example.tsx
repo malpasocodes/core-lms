@@ -34,13 +34,13 @@ function Example({
       )}
       {...props}
     >
-      <div className="text-muted-foreground px-1.5 py-2 text-xs font-medium">
+      <div className="text-slate-500 px-1.5 py-2 text-xs font-medium">
         {title}
       </div>
       <div
         data-slot="example-content"
         className={cn(
-          "bg-background text-foreground flex min-w-0 flex-1 flex-col items-start gap-6 border border-dashed p-4 sm:p-6 *:[div:not([class*='w-'])]:w-full",
+          "bg-background text-slate-900 flex min-w-0 flex-1 flex-col items-start gap-6 border border-dashed p-4 sm:p-6 *:[div:not([class*='w-'])]:w-full",
           className
         )}
       >

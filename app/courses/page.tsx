@@ -20,8 +20,8 @@ export default async function CoursesPage() {
   if (!user) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Courses</h1>
-        <p className="text-sm text-muted-foreground">Please log in to view courses.</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Courses</h1>
+        <p className="text-sm text-slate-500">Please log in to view courses.</p>
       </div>
     );
   }
@@ -54,8 +54,8 @@ export default async function CoursesPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Courses</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Courses</h1>
+        <p className="text-sm text-slate-500">
           {isAdmin
             ? "Admins can create, edit, and delete courses. Instructors see only their assigned courses."
             : "Your assigned courses are listed below."}
@@ -67,18 +67,18 @@ export default async function CoursesPage() {
           <CardTitle>Course list</CardTitle>
           <CardDescription>Assigned courses for your role.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
+        <CardContent className="space-y-2 text-sm text-slate-500">
           {courseList.length === 0 ? (
             <p>No courses available.</p>
           ) : (
-            <div className="divide-y divide-border rounded-md border border-border/70 bg-card/70 text-foreground">
+            <div className="divide-y divide-slate-200 rounded-md border border-slate-200 bg-white text-slate-900">
               {courseList.map((course) => (
                 <div key={course.id} className="flex items-center justify-between px-3 py-2">
                   <div>
                     <Link className="text-sm font-semibold underline" href={`/courses/${course.id}`}>
                       {course.title}
                     </Link>
-                    <p className="text-xs text-muted-foreground">{course.id}</p>
+                    <p className="text-xs text-slate-500">{course.id}</p>
                   </div>
                 </div>
               ))}

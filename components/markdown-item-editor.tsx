@@ -31,7 +31,7 @@ export function MarkdownItemEditor({ itemId, initialTitle, initialContent, redir
           className={`px-3 py-1 text-sm rounded-md border transition-colors ${
             mode === "preview"
               ? "bg-foreground text-background border-foreground"
-              : "border-border text-muted-foreground hover:text-foreground"
+              : "border-slate-200 text-slate-500 hover:text-slate-900"
           }`}
         >
           Preview
@@ -42,7 +42,7 @@ export function MarkdownItemEditor({ itemId, initialTitle, initialContent, redir
           className={`px-3 py-1 text-sm rounded-md border transition-colors ${
             mode === "edit"
               ? "bg-foreground text-background border-foreground"
-              : "border-border text-muted-foreground hover:text-foreground"
+              : "border-slate-200 text-slate-500 hover:text-slate-900"
           }`}
         >
           Edit
@@ -50,7 +50,7 @@ export function MarkdownItemEditor({ itemId, initialTitle, initialContent, redir
       </div>
 
       {mode === "preview" && (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
+        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 md:px-10 md:py-10">
           <div className="prose prose-neutral dark:prose-invert max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{content}</ReactMarkdown>
           </div>
@@ -63,7 +63,7 @@ export function MarkdownItemEditor({ itemId, initialTitle, initialContent, redir
           <input type="hidden" name="redirectTo" value={redirectTo} />
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
+            <label className="text-xs uppercase tracking-[0.15em] text-slate-500">
               Title
             </label>
             <input
@@ -75,7 +75,7 @@ export function MarkdownItemEditor({ itemId, initialTitle, initialContent, redir
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
+            <label className="text-xs uppercase tracking-[0.15em] text-slate-500">
               Markdown content
             </label>
             <textarea

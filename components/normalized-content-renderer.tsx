@@ -68,7 +68,7 @@ function isFigureReference(text: string): boolean {
 function renderBulletList(text: string, key: number) {
   const lines = text.split("\n").filter((l) => l.trim());
   return (
-    <ul key={key} className="list-disc list-outside ml-6 space-y-1.5 text-foreground/90">
+    <ul key={key} className="list-disc list-outside ml-6 space-y-1.5 text-slate-900/90">
       {lines.map((line, i) => (
         <li key={i} className="leading-relaxed">
           {line.replace(/^[•\-\*]\s*/, "")}
@@ -82,7 +82,7 @@ function renderBulletList(text: string, key: number) {
 function renderNumberedList(text: string, key: number) {
   const lines = text.split("\n").filter((l) => l.trim());
   return (
-    <ol key={key} className="list-decimal list-outside ml-6 space-y-3 text-foreground/90">
+    <ol key={key} className="list-decimal list-outside ml-6 space-y-3 text-slate-900/90">
       {lines.map((line, i) => (
         <li key={i} className="leading-relaxed pl-1">
           {line.replace(/^\d+[\.\)]\s*/, "")}
@@ -108,7 +108,7 @@ export function NormalizedContentRenderer({ blocks }: NormalizedContentRendererP
             // Figure/table reference
             if (isFigureReference(text)) {
               return (
-                <p key={i} className="text-sm font-medium text-muted-foreground italic my-4">
+                <p key={i} className="text-sm font-medium text-slate-500 italic my-4">
                   {text}
                 </p>
               );
@@ -117,7 +117,7 @@ export function NormalizedContentRenderer({ blocks }: NormalizedContentRendererP
             // Heading
             if (isHeading(text)) {
               return (
-                <h3 key={i} className="text-lg font-semibold text-foreground mt-8 mb-3 first:mt-0">
+                <h3 key={i} className="text-lg font-semibold text-slate-900 mt-8 mb-3 first:mt-0">
                   {text}
                 </h3>
               );
@@ -135,7 +135,7 @@ export function NormalizedContentRenderer({ blocks }: NormalizedContentRendererP
 
             // Regular paragraph
             return (
-              <p key={i} className="text-foreground/90 leading-7 text-[0.95rem]">
+              <p key={i} className="text-slate-900/90 leading-7 text-[0.95rem]">
                 {text}
               </p>
             );
@@ -145,11 +145,11 @@ export function NormalizedContentRenderer({ blocks }: NormalizedContentRendererP
             return (
               <figure
                 key={i}
-                className="my-6 rounded-lg border border-border/50 bg-muted/30 p-6 text-center"
+                className="my-6 rounded-lg border border-slate-200 bg-slate-50 p-6 text-center"
               >
-                <div className="text-muted-foreground font-medium">[{block.label}]</div>
+                <div className="text-slate-500 font-medium">[{block.label}]</div>
                 {block.caption && (
-                  <figcaption className="text-sm mt-2 text-muted-foreground/80">
+                  <figcaption className="text-sm mt-2 text-slate-500/80">
                     {block.caption}
                   </figcaption>
                 )}

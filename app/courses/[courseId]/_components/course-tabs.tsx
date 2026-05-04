@@ -27,7 +27,7 @@ export function CourseTabs({ courseId, canEdit }: CourseTabsProps) {
     : tabs;
 
   return (
-    <div className="flex flex-wrap gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+    <div className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
       {allTabs.map((tab) => (
         <Link
           key={tab.key}
@@ -35,8 +35,8 @@ export function CourseTabs({ courseId, canEdit }: CourseTabsProps) {
           className={cn(
             "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
             !isGradebook && activeTab === tab.key
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-900"
           )}
         >
           {tab.label}
@@ -48,8 +48,8 @@ export function CourseTabs({ courseId, canEdit }: CourseTabsProps) {
           className={cn(
             "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
             isGradebook
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-900"
           )}
         >
           Gradebook
