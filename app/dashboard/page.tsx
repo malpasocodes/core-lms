@@ -9,6 +9,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { courses, enrollments, userProfiles } from "@/lib/schema";
 import { CourseList } from "./_components/course-list";
 import { ProfileCard } from "./_components/profile-card";
+import { getCourseJourney } from "@/lib/journey";
+import { MetroLine } from "@/components/journey/metro-line";
 
 type DashboardPageProps = {
   searchParams?: Promise<{ notice?: string; error?: string }>;
@@ -52,6 +54,18 @@ export default async function DashboardPage(props: DashboardPageProps) {
       (c): c is { id: string; title: string } => Boolean(c.id && c.title)
     );
 
+    const courseJourneys = await Promise.all(
+      enrolledCourses.map(async (c) => {
+        const journey = await getCourseJourney(c.id, user.id);
+        const activeModule =
+          journey.modules.find((m) => m.status === "in_progress") ??
+          journey.modules.find((m) => m.status === "not_started") ??
+          journey.modules[journey.modules.length - 1] ??
+          null;
+        return { course: c, journey, activeModule };
+      })
+    );
+
     const displayName =
       profile?.preferredName ||
       clerk?.firstName ||
@@ -80,26 +94,58 @@ export default async function DashboardPage(props: DashboardPageProps) {
           </div>
         )}
 
-        <div className="rounded-2xl border border-border/70 bg-card/80 p-6 md:p-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold text-foreground">Your courses</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="text-xl font-semibold text-slate-900">Your courses</h2>
+            <p className="text-sm text-slate-500">
               {enrolledCourses.length === 0
                 ? "You are not enrolled in any courses yet."
                 : `${enrolledCourses.length} ${enrolledCourses.length === 1 ? "course" : "courses"}`}
             </p>
           </div>
-          {enrolledCourses.length > 0 && (
-            <ul className="mt-6 divide-y divide-border/60 rounded-lg border border-border/60 bg-background/60">
-              {enrolledCourses.map((course) => (
-                <li key={course.id}>
-                  <Link
-                    href={`/courses/${course.id}`}
-                    className="flex items-center justify-between px-4 py-3 text-sm hover:bg-background/80 transition-colors"
-                  >
-                    <span className="font-medium text-foreground">{course.title}</span>
-                    <span className="text-xs text-muted-foreground">Open →</span>
-                  </Link>
+          {courseJourneys.length > 0 && (
+            <ul className="mt-6 space-y-4">
+              {courseJourneys.map(({ course, journey, activeModule }) => (
+                <li
+                  key={course.id}
+                  className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 md:p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-0.5">
+                      <Link
+                        href={`/courses/${course.id}`}
+                        className="text-base font-semibold text-slate-900 hover:text-emerald-700 transition-colors"
+                      >
+                        {course.title}
+                      </Link>
+                      {journey.totalActivities > 0 ? (
+                        <p className="text-xs text-slate-500">
+                          {journey.completedActivities} of {journey.totalActivities} activities complete
+                        </p>
+                      ) : (
+                        <p className="text-xs italic text-slate-400">
+                          No content yet
+                        </p>
+                      )}
+                    </div>
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="shrink-0 text-xs font-semibold uppercase tracking-[0.15em] text-emerald-700 hover:text-emerald-800"
+                    >
+                      Open →
+                    </Link>
+                  </div>
+                  {activeModule && activeModule.stations.length > 0 && (
+                    <div className="mt-3">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        Module {activeModule.order} · {activeModule.title}
+                      </p>
+                      <MetroLine
+                        stations={activeModule.stations}
+                        density="compact"
+                      />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

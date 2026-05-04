@@ -214,25 +214,28 @@ export default async function ActivityPage(props: ActivityPageProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
           {ACTIVITY_LABEL[item.activityType] ?? item.activityType}
         </p>
-        <h1 className="text-3xl font-semibold text-foreground">{item.activityTitle}</h1>
-        <p className="text-sm text-muted-foreground">
-          {item.sectionTitle} — {item.moduleTitle} •{" "}
-          <Link className="text-foreground underline" href={`/courses/${courseId}`}>
-            {courseId}
+        <h1 className="text-3xl font-semibold text-slate-900">{item.activityTitle}</h1>
+        <p className="text-sm text-slate-600">
+          {item.sectionTitle} — {item.moduleTitle} ·{" "}
+          <Link
+            className="text-slate-900 underline hover:text-emerald-700"
+            href={`/courses/${courseId}`}
+          >
+            ← Back to course
           </Link>
         </p>
       </div>
 
       {notice && (
-        <div className="rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
           {notice}
         </div>
       )}
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
           {error}
         </div>
       )}

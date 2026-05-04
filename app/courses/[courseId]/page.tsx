@@ -37,6 +37,8 @@ import {
 } from "@/lib/openstax-actions";
 import { CourseTabs } from "./_components/course-tabs";
 import { DeleteActivityButton } from "./_components/delete-activity-button";
+import { getCourseJourney } from "@/lib/journey";
+import { ModuleCard } from "@/components/journey/module-card";
 
 type CoursePageProps = {
   params: Promise<{ courseId: string }>;
@@ -82,6 +84,56 @@ export default async function CourseDetailPage(props: CoursePageProps) {
   const canView = isAdmin || isOwner || isEnrolled;
   if (!canView) {
     redirect("/dashboard?error=Not%20enrolled%20in%20this%20course");
+  }
+
+  // Learners get the Journey view; instructors/admins keep the curriculum/edit view below.
+  if (user.role === "learner") {
+    const journey = await getCourseJourney(courseId, user.id);
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+            Course
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+            {course.title}
+          </h1>
+          {course.description && (
+            <p className="text-sm text-slate-600">{course.description}</p>
+          )}
+          {journey.totalActivities > 0 && (
+            <p className="text-xs text-slate-500">
+              {journey.completedActivities} of {journey.totalActivities} activities complete
+            </p>
+          )}
+        </div>
+
+        {notice && (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
+            {notice}
+          </div>
+        )}
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+
+        {journey.modules.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm text-slate-500">
+              Your instructor hasn&apos;t added any modules yet.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {journey.modules.map((m) => (
+              <ModuleCard key={m.id} module={m} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
   }
 
   const canEdit = isAdmin || isOwner;
@@ -173,26 +225,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
 
   const visibleAssessments = assessmentRows.filter((a) => !builtInWriteAssessmentIds.has(a.id));
 
-  const learnerSubmissionSet =
-    user.role === "learner" && visibleAssessments.length
-      ? new Set(
-          (
-            await db
-              .select({ assessmentId: submissions.assessmentId })
-              .from(submissions)
-              .where(
-                and(
-                  eq(submissions.userId, user.id),
-                  inArray(
-                    submissions.assessmentId,
-                    visibleAssessments.map((a) => a.id)
-                  )
-                )
-              )
-          ).map((row) => row.assessmentId)
-        )
-      : new Set<string>();
-
+  // Learners are handled in the early-return branch above; instructor/admin code below.
   const submissionCounts =
     canEdit && visibleAssessments.length
       ? await db
@@ -208,22 +241,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     submissionCounts.map((s) => [s.assessmentId, Number(s.count || 0)])
   );
 
-  const learnerCompletionSet =
-    user.role === "learner" && activityRows.length
-      ? new Set(
-          (
-            await db
-              .select({ activityId: completions.activityId })
-              .from(completions)
-              .where(
-                and(
-                  eq(completions.userId, user.id),
-                  inArray(completions.activityId, activityRows.map((a) => a.id))
-                )
-              )
-          ).map((c) => c.activityId)
-        )
-      : new Set<string>();
 
   // Lookup helpers for display
   const sectionTitleById = Object.fromEntries(sectionRows.map((s) => [s.id, s.title]));
@@ -279,18 +296,11 @@ export default async function CourseDetailPage(props: CoursePageProps) {
         )
       : new Set<string>();
 
-  // Learner progress totals
-  const courseActivityTotal = activityRows.length;
-  const courseActivityCompleted = user.role === "learner" ? learnerCompletionSet.size : 0;
-
-  // Per-module progress for learners
+  // Per-module activity totals (instructor/admin view; progress columns are learner-only)
   const moduleProgressMap = new Map(
     moduleRows.map((mod) => {
       const modActivities = (sectionsByModule[mod.id] ?? []).flatMap((s) => activitiesBySection[s.id] ?? []);
-      const completed = user.role === "learner"
-        ? modActivities.filter((a) => learnerCompletionSet.has(a.id)).length
-        : 0;
-      return [mod.id, { total: modActivities.length, completed }];
+      return [mod.id, { total: modActivities.length, completed: 0 }];
     })
   );
 
@@ -306,20 +316,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
             {course.description || "No description provided."}
           </p>
         </div>
-        {user.role === "learner" && courseActivityTotal > 0 && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Your progress</span>
-              <span className="tabular-nums">{courseActivityCompleted} / {courseActivityTotal} activities</span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-teal-500 transition-all"
-                style={{ width: `${Math.round((courseActivityCompleted / courseActivityTotal) * 100)}%` }}
-              />
-            </div>
-          </div>
-        )}
         <Suspense fallback={<div className="h-9" />}>
           <CourseTabs courseId={courseId} canEdit={canEdit} />
         </Suspense>
@@ -364,19 +360,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                             {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {activityCount} {activityCount === 1 ? "activity" : "activities"}
                           </span>
                         </div>
-                        {user.role === "learner" && prog && prog.total > 0 && (
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-teal-500"
-                                style={{ width: `${Math.round((prog.completed / prog.total) * 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-[11px] text-slate-400 tabular-nums">
-                              {prog.completed}/{prog.total}
-                            </span>
-                          </div>
-                        )}
                       </li>
                     );
                   })}
@@ -442,19 +425,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                         <div className="flex-1 space-y-1.5">
                           <CardTitle className="text-base">{mod.title}</CardTitle>
                           <CardDescription>Order: {mod.order}</CardDescription>
-                          {user.role === "learner" && prog && prog.total > 0 && (
-                            <div className="flex items-center gap-2 pt-1">
-                              <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full bg-teal-500 transition-all"
-                                  style={{ width: `${Math.round((prog.completed / prog.total) * 100)}%` }}
-                                />
-                              </div>
-                              <span className="text-[11px] text-slate-400 tabular-nums">
-                                {prog.completed}/{prog.total}
-                              </span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </CardHeader>
@@ -465,10 +435,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                         <div className="space-y-3">
                           {modSections.map((sec) => {
                             const items = activitiesBySection[sec.id] || [];
-                            const completedCount =
-                              user.role === "learner"
-                                ? items.filter((item) => learnerCompletionSet.has(item.id)).length
-                                : undefined;
                             return (
                               <div
                                 key={sec.id}
@@ -476,11 +442,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                               >
                                 <div className="flex items-center justify-between">
                                   <p className="text-sm font-semibold text-foreground">{sec.title}</p>
-                                  {typeof completedCount === "number" && (
-                                    <span className="text-xs font-semibold text-foreground">
-                                      {completedCount}/{items.length} completed
-                                    </span>
-                                  )}
                                 </div>
                                 {items.length > 0 ? (
                                   <ul className="space-y-1 text-sm">
@@ -496,11 +457,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                           {item.title}
                                         </a>
                                         <div className="flex items-center gap-2">
-                                          {user.role === "learner" && learnerCompletionSet.has(item.id) && (
-                                            <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
-                                              ✓
-                                            </span>
-                                          )}
                                           <span className="text-xs uppercase tracking-wide text-muted-foreground">
                                             {item.type}
                                           </span>
@@ -706,7 +662,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
           ) : (
             <div className="space-y-2">
               {visibleAssessments.map((a) => {
-                const learnerSubmitted = learnerSubmissionSet.has(a.id);
                 const submissionCount = submissionCountMap.get(a.id) || 0;
                 const activity = activityById.get(a.activityId);
                 return (
@@ -742,11 +697,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        {user.role === "learner" && (
-                          <span className={learnerSubmitted ? "text-foreground" : undefined}>
-                            {learnerSubmitted ? "Submitted" : "Not submitted"}
-                          </span>
-                        )}
                         {canEdit && <span>{submissionCount} submissions</span>}
                       </div>
                     </CardContent>

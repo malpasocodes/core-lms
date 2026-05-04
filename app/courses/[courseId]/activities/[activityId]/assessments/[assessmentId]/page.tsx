@@ -132,22 +132,25 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
           {isMcq ? "Quiz" : "Assessment"}
           {assessment.graded ? " · Graded" : " · Formative"}
         </p>
-        <h1 className="text-3xl font-semibold text-foreground">{assessment.title}</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-3xl font-semibold text-slate-900">{assessment.title}</h1>
+        <p className="text-sm text-slate-600">
           Activity:{" "}
           <Link
-            className="text-foreground underline"
+            className="text-slate-900 underline hover:text-emerald-700"
             href={`/courses/${courseId}/activities/${activityId}`}
           >
             {assessment.activityTitle}
           </Link>{" "}
-          · Course:{" "}
-          <Link className="text-foreground underline" href={`/courses/${courseId}`}>
-            {assessment.courseTitle}
+          ·{" "}
+          <Link
+            className="text-slate-900 underline hover:text-emerald-700"
+            href={`/courses/${courseId}`}
+          >
+            ← Back to course
           </Link>
         </p>
         {assessment.dueAt && (() => {
@@ -184,59 +187,72 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
               </div>
 
               {learnerGrade ? (
-                <div className="flex items-center justify-between rounded-md border border-border/60 bg-card/70 px-3 py-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Score
+                <div className="flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+                  <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                    <svg
+                      viewBox="0 0 16 16"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="3,8 7,12 13,4" />
+                    </svg>
+                    Submitted · Score
                   </span>
-                  <span className="text-sm font-semibold text-foreground">
+                  <span className="text-sm font-semibold text-emerald-900">
                     {learnerGrade.score} / 100
                   </span>
                 </div>
               ) : null}
 
-              <form action={submitMcqAction} className="space-y-6">
+              <form action={submitMcqAction} className="space-y-4">
                 <input type="hidden" name="assessmentId" value={assessmentId} />
                 {questions.map((q, i) => {
                   const opts: string[] = JSON.parse(q.options);
                   const chosen = learnerAnswers[q.id];
                   const isCorrect = chosen === q.correctIndex;
                   return (
-                    <fieldset key={q.id} className="space-y-2">
-                      <legend className="text-sm font-medium text-foreground">
+                    <fieldset
+                      key={q.id}
+                      className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <legend className="px-1 text-sm font-semibold text-slate-900">
                         {i + 1}. {q.questionText}
                       </legend>
-                      <div className="space-y-1.5 pl-1">
-                        {opts.map((opt, j) => (
-                          <label
-                            key={j}
-                            className="flex items-start gap-2.5 text-sm cursor-pointer"
-                          >
-                            <input
-                              type="radio"
-                              name={`answer_${q.id}`}
-                              value={String(j)}
-                              defaultChecked={chosen === j}
-                              disabled={Boolean(learnerGrade)}
-                              className="mt-0.5 accent-foreground"
-                            />
-                            <span
-                              className={
-                                learnerGrade
-                                  ? j === q.correctIndex
-                                    ? "text-green-600 dark:text-green-400 font-medium"
-                                    : j === chosen && !isCorrect
-                                    ? "text-red-600 dark:text-red-400 line-through"
-                                    : "text-muted-foreground"
-                                  : "text-foreground"
-                              }
-                            >
-                              {opt}
-                            </span>
-                          </label>
-                        ))}
+                      <div className="space-y-1.5">
+                        {opts.map((opt, j) => {
+                          const isCorrectOption = j === q.correctIndex;
+                          const isLearnerChoice = chosen === j;
+                          const baseClass =
+                            "flex cursor-pointer items-start gap-2.5 rounded-md border bg-white px-3 py-2 text-sm transition-colors";
+                          const stateClass = learnerGrade
+                            ? isCorrectOption
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                              : isLearnerChoice && !isCorrect
+                                ? "border-red-300 bg-red-50 text-red-700 line-through"
+                                : "border-slate-200 text-slate-500"
+                            : "border-slate-200 text-slate-800 hover:border-emerald-300 hover:bg-emerald-50";
+                          return (
+                            <label key={j} className={`${baseClass} ${stateClass}`}>
+                              <input
+                                type="radio"
+                                name={`answer_${q.id}`}
+                                value={String(j)}
+                                defaultChecked={chosen === j}
+                                disabled={Boolean(learnerGrade)}
+                                className="mt-0.5 accent-emerald-600"
+                              />
+                              <span>{opt}</span>
+                            </label>
+                          );
+                        })}
                       </div>
                       {learnerGrade && q.explanation ? (
-                        <p className="text-xs text-muted-foreground pl-1 pt-1">
+                        <p className="px-1 text-xs text-slate-600">
                           {isCorrect ? "✓ " : "✗ "}
                           {q.explanation}
                         </p>
@@ -245,7 +261,12 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
                   );
                 })}
                 {!learnerGrade && (
-                  <Button type="submit">Submit Quiz</Button>
+                  <Button
+                    type="submit"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    Submit Quiz
+                  </Button>
                 )}
               </form>
             </div>
