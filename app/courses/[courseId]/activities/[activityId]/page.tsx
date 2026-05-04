@@ -352,7 +352,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
                     {instructorWatchNotes.map((row, i) => (
                       <li
                         key={i}
-                        className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2"
+                        className="rounded-lg border border-slate-200 bg-white p-4 space-y-2"
                       >
                         <div className="flex items-baseline justify-between gap-2">
                           <p className="text-xs font-semibold text-slate-900">{row.email}</p>

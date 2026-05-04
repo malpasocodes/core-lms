@@ -105,49 +105,91 @@ export default async function DashboardPage(props: DashboardPageProps) {
           </div>
           {courseJourneys.length > 0 && (
             <ul className="mt-6 space-y-4">
-              {courseJourneys.map(({ course, journey, activeModule }) => (
-                <li
-                  key={course.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 md:p-5"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-0.5">
-                      <Link
-                        href={`/courses/${course.id}`}
-                        className="text-base font-semibold text-slate-900 hover:text-emerald-700 transition-colors"
-                      >
-                        {course.title}
-                      </Link>
-                      {journey.totalActivities > 0 ? (
-                        <p className="text-xs text-slate-500">
-                          {journey.completedActivities} of {journey.totalActivities} activities complete
-                        </p>
+              {courseJourneys.map(({ course, journey, activeModule }) => {
+                const currentStation = journey.modules
+                  .flatMap((m) => m.stations)
+                  .find((s) => s.status === "current");
+                const allComplete =
+                  journey.totalActivities > 0 &&
+                  journey.completedActivities === journey.totalActivities;
+                return (
+                  <li
+                    key={course.id}
+                    className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 md:p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-0.5">
+                        <Link
+                          href={`/courses/${course.id}`}
+                          className="text-base font-semibold text-slate-900 hover:text-emerald-700 transition-colors"
+                        >
+                          {course.title}
+                        </Link>
+                        {journey.totalActivities > 0 ? (
+                          <p className="text-xs text-slate-500">
+                            {journey.completedActivities} of {journey.totalActivities} activities complete
+                          </p>
+                        ) : (
+                          <p className="text-xs italic text-slate-400">
+                            No content yet
+                          </p>
+                        )}
+                      </div>
+                      {currentStation?.href ? (
+                        <Link
+                          href={currentStation.href}
+                          className="shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-white shadow-sm transition-colors hover:bg-emerald-700"
+                          aria-label={`Continue: ${currentStation.label}`}
+                        >
+                          Continue →
+                        </Link>
+                      ) : allComplete ? (
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-purple-700">
+                          <svg
+                            viewBox="0 0 12 12"
+                            className="h-3 w-3"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <polyline points="2.5,6.5 5,9 9.5,3.5" />
+                          </svg>
+                          All complete
+                        </span>
                       ) : (
-                        <p className="text-xs italic text-slate-400">
-                          No content yet
-                        </p>
+                        <Link
+                          href={`/courses/${course.id}`}
+                          className="shrink-0 text-xs font-semibold uppercase tracking-[0.15em] text-emerald-700 hover:text-emerald-800"
+                        >
+                          Open →
+                        </Link>
                       )}
                     </div>
-                    <Link
-                      href={`/courses/${course.id}`}
-                      className="shrink-0 text-xs font-semibold uppercase tracking-[0.15em] text-emerald-700 hover:text-emerald-800"
-                    >
-                      Open →
-                    </Link>
-                  </div>
-                  {activeModule && activeModule.stations.length > 0 && (
-                    <div className="mt-3">
-                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                        Module {activeModule.order} · {activeModule.title}
+                    {currentStation && (
+                      <p className="mt-2 text-xs text-slate-600">
+                        Up next:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {currentStation.label}
+                        </span>
                       </p>
-                      <MetroLine
-                        stations={activeModule.stations}
-                        density="compact"
-                      />
-                    </div>
-                  )}
-                </li>
-              ))}
+                    )}
+                    {activeModule && activeModule.stations.length > 0 && (
+                      <div className="mt-3">
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                          Module {activeModule.order} · {activeModule.title}
+                        </p>
+                        <MetroLine
+                          stations={activeModule.stations}
+                          density="compact"
+                        />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
