@@ -43,12 +43,12 @@ import { ModuleCard } from "@/components/journey/module-card";
 
 type CoursePageProps = {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ tab?: string; notice?: string; error?: string }>;
+  searchParams: Promise<{ tab?: string; notice?: string; error?: string; preview?: string }>;
 };
 
 export default async function CourseDetailPage(props: CoursePageProps) {
   const { courseId } = (await props.params) || {};
-  const { tab = "overview", notice, error } = (await props.searchParams) || {};
+  const { tab = "overview", notice, error, preview } = (await props.searchParams) || {};
 
   if (!courseId) {
     notFound();
@@ -87,8 +87,12 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     redirect("/dashboard?error=Not%20enrolled%20in%20this%20course");
   }
 
-  // Learners get the Journey view; instructors/admins keep the curriculum/edit view below.
-  if (user.role === "learner") {
+  // Instructors/admins can preview the learner journey via ?preview=learner.
+  const isLearnerPreview = preview === "learner" && (isOwner || isAdmin);
+
+  // Learners get the Journey view; instructors/admins keep the curriculum/edit view
+  // below — unless they've opted into the learner preview.
+  if (user.role === "learner" || isLearnerPreview) {
     const journey = await getCourseJourney(courseId, user.id);
     const currentStation = journey.modules
       .flatMap((m) => m.stations)
@@ -111,6 +115,21 @@ export default async function CourseDetailPage(props: CoursePageProps) {
 
     return (
       <div className="space-y-6">
+        {isLearnerPreview && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+            <div className="flex items-center justify-between gap-3">
+              <span>
+                <strong>Previewing as learner.</strong> Progress shown is your own (instructors don&apos;t accumulate completions).
+              </span>
+              <Link
+                href={`/courses/${courseId}`}
+                className="shrink-0 text-xs font-semibold uppercase tracking-[0.15em] text-amber-900 underline hover:text-amber-700"
+              >
+                Exit preview
+              </Link>
+            </div>
+          </div>
+        )}
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
             Course
@@ -413,14 +432,35 @@ export default async function CourseDetailPage(props: CoursePageProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Course</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {course.title}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {course.description || "No description provided."}
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Course</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              {course.title}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {course.description || "No description provided."}
+            </p>
+          </div>
+          <Link
+            href={`/courses/${courseId}?preview=learner`}
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-emerald-700 transition-colors hover:bg-emerald-100"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5-6.5-5-6.5-5z" />
+              <circle cx="8" cy="8" r="2" />
+            </svg>
+            Preview as learner
+          </Link>
         </div>
         <Suspense fallback={<div className="h-9" />}>
           <CourseTabs courseId={courseId} canEdit={canEdit} />
