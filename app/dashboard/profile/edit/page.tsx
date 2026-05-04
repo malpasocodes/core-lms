@@ -37,18 +37,24 @@ export default async function EditProfilePage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
           Profile
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Edit profile</h1>
-        <p className="text-sm text-muted-foreground">
-          Name, email, and avatar are managed in your Clerk account.
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Edit profile</h1>
+        <p className="text-sm text-slate-600">
+          Name, email, and avatar are managed in your Clerk account.{" "}
+          <Link
+            href="/dashboard"
+            className="text-slate-900 underline hover:text-emerald-700"
+          >
+            ← Back to dashboard
+          </Link>
         </p>
       </div>
 
       <form
         action={updateUserProfileAction}
-        className="max-w-2xl space-y-6 rounded-2xl border border-border/70 bg-card/80 p-6 md:p-8"
+        className="max-w-2xl space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
@@ -106,7 +112,12 @@ export default async function EditProfilePage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button type="submit">Save profile</Button>
+          <Button
+            type="submit"
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            Save profile
+          </Button>
           <Button asChild variant="outline">
             <Link href="/dashboard">Cancel</Link>
           </Button>

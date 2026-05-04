@@ -8,21 +8,24 @@ export default function PendingApprovalPage() {
     <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
       <div className="max-w-md space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-foreground">Account Pending Approval</h1>
-          <p className="text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+            Pending
+          </p>
+          <h1 className="text-2xl font-semibold text-slate-900">Account pending approval</h1>
+          <p className="text-slate-600">
             Your account has been created and is awaiting administrator approval.
-            You will be notified when your account has been approved.
+            You&apos;ll be notified when it&apos;s approved.
           </p>
         </div>
 
-        <div className="rounded-lg border border-border/70 bg-card/80 p-6">
-          <p className="text-sm text-muted-foreground">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm text-slate-600">
             If you believe this is an error or need immediate access, please contact your administrator.
           </p>
         </div>
 
         <SignOutButton>
-          <Button variant="outline">Sign Out</Button>
+          <Button variant="outline">Sign out</Button>
         </SignOutButton>
       </div>
     </div>
