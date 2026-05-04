@@ -111,7 +111,7 @@ docs/               # UI/UX specs and roadmaps
 
 ## Deployment
 
-Optimized for [Vercel](https://vercel.com). Set the environment variables above in your project settings and deploy from the GitHub repo.
+The current reference deployment runs on [Netlify](https://www.netlify.com/). Set the environment variables listed above in your site settings and connect the GitHub repo.
 
 ## License
 
