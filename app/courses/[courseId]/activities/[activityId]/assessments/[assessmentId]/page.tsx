@@ -274,65 +274,111 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
             <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-900">Your submission</p>
-                <Badge variant={learnerSubmission ? "default" : "secondary"}>
-                  {learnerSubmission ? "Submitted" : "Not submitted"}
-                </Badge>
+                {learnerSubmission ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-emerald-800">
+                    <svg
+                      viewBox="0 0 16 16"
+                      className="h-3 w-3"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="3,8 7,12 13,4" />
+                    </svg>
+                    Submitted
+                  </span>
+                ) : (
+                  <Badge variant="secondary">Not submitted</Badge>
+                )}
               </div>
               {learnerGrade ? (
-                <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Grade
+                <div className="flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+                  <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                    <svg
+                      viewBox="0 0 16 16"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="3,8 7,12 13,4" />
+                    </svg>
+                    Graded
                   </span>
-                  <span className="text-sm font-semibold text-slate-900">{learnerGrade.score} / 100</span>
+                  <span className="text-sm font-semibold text-emerald-900">{learnerGrade.score} / 100</span>
                 </div>
               ) : null}
               {learnerSubmission ? (
                 <div className="space-y-2 text-sm text-slate-900">
                   {learnerSubmission.submissionText ? (
                     <div className="space-y-1">
-                      <p className="text-xs font-semibold text-slate-500">Text</p>
-                      <p className="whitespace-pre-wrap">{learnerSubmission.submissionText}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Text
+                      </p>
+                      <p className="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                        {learnerSubmission.submissionText}
+                      </p>
                     </div>
                   ) : null}
                   {learnerSubmission.fileUrl ? (
                     <div className="space-y-1">
-                      <p className="text-xs font-semibold text-slate-500">File URL</p>
-                      <a className="text-slate-900 underline" href={learnerSubmission.fileUrl} target="_blank" rel="noreferrer">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        File URL
+                      </p>
+                      <a
+                        className="text-slate-900 underline hover:text-emerald-700"
+                        href={learnerSubmission.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {learnerSubmission.fileUrl}
                       </a>
                     </div>
                   ) : null}
                   <p className="text-xs text-slate-500">
-                    Updated at: {learnerSubmission.submittedAt?.toString() ?? "Unknown"}
+                    Submitted {learnerSubmission.submittedAt?.toLocaleString() ?? "(unknown)"}
                   </p>
                 </div>
               ) : null}
-              <form action={submitAssessmentAction} className="space-y-3">
-                <input type="hidden" name="assessmentId" value={assessmentId} />
-                <div className="space-y-1">
-                  <Label htmlFor="submission-text">Submission text</Label>
-                  <Textarea
-                    id="submission-text"
-                    name="submissionText"
-                    rows={4}
-                    defaultValue={learnerSubmission?.submissionText ?? ""}
-                    placeholder="Paste your response here (optional if you provide a file URL)"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="submission-file">File URL (optional)</Label>
-                  <Input
-                    id="submission-file"
-                    name="fileUrl"
-                    type="url"
-                    defaultValue={learnerSubmission?.fileUrl ?? ""}
-                    placeholder="https://example.com/artifact.pdf"
-                  />
-                </div>
-                <Button type="submit">
-                  {learnerSubmission ? "Update submission" : "Submit"}
-                </Button>
-              </form>
+              {!learnerGrade && (
+                <form action={submitAssessmentAction} className="space-y-3">
+                  <input type="hidden" name="assessmentId" value={assessmentId} />
+                  <div className="space-y-1">
+                    <Label htmlFor="submission-text">Submission text</Label>
+                    <Textarea
+                      id="submission-text"
+                      name="submissionText"
+                      rows={6}
+                      defaultValue={learnerSubmission?.submissionText ?? ""}
+                      placeholder="Paste your response here (optional if you provide a file URL)"
+                      className="focus-visible:border-emerald-400 focus-visible:ring-emerald-200 focus-visible:ring-[2px]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="submission-file">File URL (optional)</Label>
+                    <Input
+                      id="submission-file"
+                      name="fileUrl"
+                      type="url"
+                      defaultValue={learnerSubmission?.fileUrl ?? ""}
+                      placeholder="https://example.com/artifact.pdf"
+                      className="focus-visible:border-emerald-400 focus-visible:ring-emerald-200 focus-visible:ring-[2px]"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  >
+                    {learnerSubmission ? "Update submission" : "Submit"}
+                  </Button>
+                </form>
+              )}
             </div>
           )
         ) : null}
