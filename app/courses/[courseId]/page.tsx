@@ -434,11 +434,11 @@ export default async function CourseDetailPage(props: CoursePageProps) {
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Course</p>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Course</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
               {course.title}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-500">
               {course.description || "No description provided."}
             </p>
           </div>
@@ -485,7 +485,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
               <CardTitle>Modules</CardTitle>
               <CardDescription>{moduleRows.length} modules in this course</CardDescription>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
+            <CardContent className="text-sm text-slate-500">
               {moduleRows.length === 0 ? (
                 <p>No modules yet.</p>
               ) : (
@@ -501,8 +501,8 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                     return (
                       <li key={mod.id} className="space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-foreground">{mod.title}</span>
-                          <span className="text-muted-foreground">
+                          <span className="text-slate-900">{mod.title}</span>
+                          <span className="text-slate-500">
                             {sectionCount} {sectionCount === 1 ? "section" : "sections"}, {activityCount} {activityCount === 1 ? "activity" : "activities"}
                           </span>
                         </div>
@@ -521,7 +521,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                 {visibleAssessments.length} {visibleAssessments.length === 1 ? "assessment" : "assessments"} attached to activities
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
+            <CardContent className="text-sm text-slate-500">
               {visibleAssessments.length === 0 ? (
                 <p>No assessments yet.</p>
               ) : (
@@ -532,12 +532,12 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                       <li key={a.id}>
                         <a
                           href={`/courses/${courseId}/activities/${a.activityId}/assessments/${a.id}`}
-                          className="text-foreground underline"
+                          className="text-slate-900 underline"
                         >
                           {a.title}
                         </a>
                         {activity && (
-                          <span className="ml-2 text-xs text-muted-foreground">
+                          <span className="ml-2 text-xs text-slate-500">
                             — {activity.title}
                           </span>
                         )}
@@ -555,7 +555,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
         <div className="space-y-4">
           {moduleRows.length === 0 ? (
             <Card>
-              <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              <CardContent className="p-6 text-center text-sm text-slate-500">
                 No modules yet. Create your first module to get started.
               </CardContent>
             </Card>
@@ -576,7 +576,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {modSections.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">No sections yet.</p>
+                        <p className="text-xs text-slate-500">No sections yet.</p>
                       ) : (
                         <div className="space-y-3">
                           {modSections.map((sec) => {
@@ -584,26 +584,26 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                             return (
                               <div
                                 key={sec.id}
-                                className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2"
+                                className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2"
                               >
                                 <div className="flex items-center justify-between">
-                                  <p className="text-sm font-semibold text-foreground">{sec.title}</p>
+                                  <p className="text-sm font-semibold text-slate-900">{sec.title}</p>
                                 </div>
                                 {items.length > 0 ? (
                                   <ul className="space-y-1 text-sm">
                                     {items.map((item) => (
                                       <li
                                         key={item.id}
-                                        className="flex items-center justify-between rounded border border-border/40 bg-background/60 px-3 py-1.5"
+                                        className="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-1.5"
                                       >
                                         <a
-                                          className="text-foreground underline"
+                                          className="text-slate-900 underline"
                                           href={`/courses/${courseId}/activities/${item.id}`}
                                         >
                                           {item.title}
                                         </a>
                                         <div className="flex items-center gap-2">
-                                          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                          <span className="text-xs uppercase tracking-wide text-slate-500">
                                             {item.type}
                                           </span>
                                           {canEdit && (
@@ -618,19 +618,19 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                     ))}
                                   </ul>
                                 ) : (
-                                  <p className="text-xs text-muted-foreground">No activities yet.</p>
+                                  <p className="text-xs text-slate-500">No activities yet.</p>
                                 )}
 
                                 {canEdit && (
                                   <div className="space-y-1">
                                     {/* Watch */}
-                                    <details className="group rounded border border-border/40 bg-background/40">
-                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                    <details className="group rounded border border-slate-200 bg-slate-50">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-900 select-none">
                                         + Watch — YouTube video
                                       </summary>
                                       <form
                                         action={createWatchActivityAction}
-                                        className="space-y-2 border-t border-border/40 p-3"
+                                        className="space-y-2 border-t border-slate-200 p-3"
                                       >
                                         <input type="hidden" name="sectionId" value={sec.id} />
                                         <div className="space-y-1">
@@ -652,14 +652,14 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                     </details>
 
                                     {/* Listen */}
-                                    <details className="group rounded border border-border/40 bg-background/40">
-                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                    <details className="group rounded border border-slate-200 bg-slate-50">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-900 select-none">
                                         + Listen — audio file
                                       </summary>
                                       <form
                                         action={uploadListenActivityAction}
                                         encType="multipart/form-data"
-                                        className="space-y-2 border-t border-border/40 p-3"
+                                        className="space-y-2 border-t border-slate-200 p-3"
                                       >
                                         <input type="hidden" name="sectionId" value={sec.id} />
                                         <div className="space-y-1">
@@ -681,14 +681,14 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                     </details>
 
                                     {/* Read */}
-                                    <details className="group rounded border border-border/40 bg-background/40">
-                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                    <details className="group rounded border border-slate-200 bg-slate-50">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-900 select-none">
                                         + Read — PDF or Markdown
                                       </summary>
                                       <form
                                         action={createReadActivityAction}
                                         encType="multipart/form-data"
-                                        className="space-y-2 border-t border-border/40 p-3"
+                                        className="space-y-2 border-t border-slate-200 p-3"
                                       >
                                         <input type="hidden" name="sectionId" value={sec.id} />
                                         <div className="space-y-1">
@@ -711,16 +711,16 @@ export default async function CourseDetailPage(props: CoursePageProps) {
 
                                     {/* Import Read — from OpenStax (only when section is linked) */}
                                     {sec.sourceRef?.startsWith("openstax:book:") && (
-                                      <details className="group rounded border border-border/40 bg-background/40">
-                                        <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                      <details className="group rounded border border-slate-200 bg-slate-50">
+                                        <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-900 select-none">
                                           + Import Read — from OpenStax
                                         </summary>
                                         <form
                                           action={importOpenstaxSectionAsReadActivityAction}
-                                          className="space-y-2 border-t border-border/40 p-3"
+                                          className="space-y-2 border-t border-slate-200 p-3"
                                         >
                                           <input type="hidden" name="sectionId" value={sec.id} />
-                                          <p className="text-xs text-muted-foreground">
+                                          <p className="text-xs text-slate-500">
                                             Imports the OpenStax section text linked to this section as a Read activity.
                                           </p>
                                           <div className="space-y-1">
@@ -733,13 +733,13 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                     )}
 
                                     {/* Write */}
-                                    <details className="group rounded border border-border/40 bg-background/40">
-                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                                    <details className="group rounded border border-slate-200 bg-slate-50">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-900 select-none">
                                         + Write — writing prompt
                                       </summary>
                                       <form
                                         action={createWriteActivityAction}
-                                        className="space-y-2 border-t border-border/40 p-3"
+                                        className="space-y-2 border-t border-slate-200 p-3"
                                       >
                                         <input type="hidden" name="sectionId" value={sec.id} />
                                         <div className="space-y-1">
@@ -772,13 +772,13 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                       )}
 
                       {canEdit && (
-                        <details className="rounded-md border border-border/60 bg-muted/30">
-                          <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-foreground select-none">
+                        <details className="rounded-md border border-slate-200 bg-slate-50">
+                          <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-900 select-none">
                             + Add section
                           </summary>
                           <form
                             action={createSectionAction}
-                            className="border-t border-border/60 p-3"
+                            className="border-t border-slate-200 p-3"
                           >
                             <input type="hidden" name="moduleId" value={mod.id} />
                             <div className="flex gap-2">
@@ -801,7 +801,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
         <div className="space-y-4">
           {visibleAssessments.length === 0 ? (
             <Card>
-              <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              <CardContent className="p-6 text-center text-sm text-slate-500">
                 No assessments yet. Add an assessment from any activity page.
               </CardContent>
             </Card>
@@ -815,34 +815,34 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                     <CardContent className="flex items-start justify-between p-4">
                       <div className="space-y-1">
                         <a
-                          className="text-sm font-semibold text-foreground underline"
+                          className="text-sm font-semibold text-slate-900 underline"
                           href={`/courses/${courseId}/activities/${a.activityId}/assessments/${a.id}`}
                         >
                           {a.title}
                         </a>
                         {a.description && (
-                          <p className="text-xs text-muted-foreground">{a.description}</p>
+                          <p className="text-xs text-slate-500">{a.description}</p>
                         )}
                         {activity && (
-                          <p className="text-[11px] text-muted-foreground">
+                          <p className="text-[11px] text-slate-500">
                             Activity: {activity.title}
                             {activity.sectionId && sectionTitleById[activity.sectionId]
                               ? ` — ${sectionTitleById[activity.sectionId]}`
                               : ""}
                           </p>
                         )}
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-[11px] text-slate-500">
                           {a.type === "mcq" ? "Multiple choice" : "Open-ended"}
                           {a.graded ? " • Graded" : " • Formative"}
                         </p>
                         {a.dueAt && (
-                          <p className={`text-[11px] font-medium ${a.dueAt < new Date() ? "text-red-600" : "text-muted-foreground"}`}>
+                          <p className={`text-[11px] font-medium ${a.dueAt < new Date() ? "text-red-600" : "text-slate-500"}`}>
                             Due: {a.dueAt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                             {a.dueAt < new Date() ? " — Overdue" : ""}
                           </p>
                         )}
                       </div>
-                      <div className="flex flex-col items-end gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <div className="flex flex-col items-end gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         {canEdit && <span>{submissionCount} submissions</span>}
                       </div>
                     </CardContent>
@@ -884,9 +884,9 @@ export default async function CourseDetailPage(props: CoursePageProps) {
               <CardContent>
                 <ul className="space-y-1 text-sm">
                   {moduleRows.map((mod) => (
-                    <li key={mod.id} className="flex justify-between text-foreground">
+                    <li key={mod.id} className="flex justify-between text-slate-900">
                       <span>{mod.title}</span>
-                      <span className="text-muted-foreground">
+                      <span className="text-slate-500">
                         {(sectionsByModule[mod.id] || []).length} sections
                       </span>
                     </li>
@@ -972,7 +972,7 @@ export default async function CourseDetailPage(props: CoursePageProps) {
             </CardHeader>
             <CardContent>
               {importCatalog.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-slate-500">
                   No ingested OpenStax books yet. Ask an admin to ingest books from{" "}
                   <a href="/admin/openstax" className="underline">
                     /admin/openstax
@@ -989,14 +989,14 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                         className="flex items-center justify-between gap-4 py-3"
                       >
                         <div className="space-y-0.5">
-                          <p className="text-sm font-semibold text-foreground">{book.title}</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-sm font-semibold text-slate-900">{book.title}</p>
+                          <p className="text-xs text-slate-500">
                             {Number(book.chapterCount)} chapters · {Number(book.sectionCount)} sections
                             {book.subject ? ` · ${book.subject}` : ""}
                           </p>
                         </div>
                         {already ? (
-                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Already imported
                           </span>
                         ) : (
