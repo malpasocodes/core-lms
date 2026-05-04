@@ -687,13 +687,22 @@ export default async function ActivityPage(props: ActivityPageProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <nav
+        className="flex items-center justify-between gap-3 border-t border-slate-200 pt-6"
+        aria-label="Activity navigation"
+      >
         {prev ? (
           <Link
-            className="text-sm font-semibold text-slate-900 underline"
             href={`/courses/${courseId}/activities/${prev.id}`}
+            className="group inline-flex max-w-[45%] items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-emerald-300 hover:text-emerald-700"
           >
-            ← {prev.title}
+            <span aria-hidden="true">←</span>
+            <span className="space-y-0">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 group-hover:text-emerald-600">
+                Previous
+              </span>
+              <span className="block truncate">{prev.title}</span>
+            </span>
           </Link>
         ) : (
           <span />
@@ -704,23 +713,37 @@ export default async function ActivityPage(props: ActivityPageProps) {
           item.activityType !== "watch" ? (
             <form action={markActivityCompleteAction}>
               <input type="hidden" name="activityId" value={activityId} />
-              <Button type="submit" variant="outline" disabled={isCompleted}>
-                {isCompleted ? "Completed" : "Mark complete"}
+              <Button
+                type="submit"
+                disabled={isCompleted}
+                className={
+                  isCompleted
+                    ? "bg-purple-100 text-purple-700 hover:bg-purple-100"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                }
+              >
+                {isCompleted ? "✓ Completed" : "Mark complete"}
               </Button>
             </form>
           ) : null}
           {next ? (
             <Link
-              className="text-sm font-semibold text-slate-900 underline"
               href={`/courses/${courseId}/activities/${next.id}`}
+              className="group inline-flex max-w-[45%] items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-emerald-300 hover:text-emerald-700"
             >
-              {next.title} →
+              <span className="space-y-0 text-right">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 group-hover:text-emerald-600">
+                  Next
+                </span>
+                <span className="block truncate">{next.title}</span>
+              </span>
+              <span aria-hidden="true">→</span>
             </Link>
           ) : (
             <span />
           )}
         </div>
-      </div>
+      </nav>
     </div>
   );
 }

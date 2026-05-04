@@ -59,7 +59,12 @@ export function WriteActivityClient({
           {count} character{count === 1 ? "" : "s"}
           {hint ? ` · ${hint}` : ""}
         </span>
-        <Button type="submit" disabled={invalid} size="sm">
+        <Button
+          type="submit"
+          disabled={invalid}
+          size="sm"
+          className="bg-emerald-600 text-white hover:bg-emerald-700"
+        >
           {initialText ? "Update response" : "Submit response"}
         </Button>
       </div>

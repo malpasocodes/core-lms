@@ -11,7 +11,12 @@ const MAX = 2000;
 function SaveButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="sm" disabled={disabled || pending}>
+    <Button
+      type="submit"
+      size="sm"
+      disabled={disabled || pending}
+      className="bg-emerald-600 text-white hover:bg-emerald-700"
+    >
       {pending ? "Saving…" : "Save & mark video complete"}
     </Button>
   );
