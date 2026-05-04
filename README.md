@@ -1,6 +1,38 @@
 # CoreLMS
 
-A minimalist Learning Management System demonstrating that core LMS functionality is a commodity. Built to show how much of a traditional LMS can be replaced by a small, modern stack.
+CoreLMS is a small, open Learning Management System — and an experiment.
+
+It exists to make two arguments, one with code and one with what comes next.
+
+## The first argument: the LMS is a commodity
+
+The "core" functionality of a Learning Management System — courses, modules, activities, assessments, enrollments, grades, announcements, roles, permissions — is now easily replicable by a single developer using AI-agentic tools. CoreLMS is the working proof. The full feature set lives in this repository, under an MIT license, free for anyone to use, fork, study, or replace.
+
+If the basic LMS is a commodity, the interesting question is no longer *can we build one*. It is *what should we build instead*.
+
+## The second argument: the LMS, as conceived, is an architectural dead end
+
+After three decades of LMS adoption, these systems still have very little to do with teaching and learning. They manage courses. They manage files. They manage assignments, grades, announcements, enrollments, and permissions. Those things matter — but they are not the same as advancing teaching and learning.
+
+A different architecture is needed. That work is long-term, and even if it materializes, institutions will not transition overnight. So there needs to be a Plan B.
+
+**Plan B is to evolve the Learning Management System.** CoreLMS is the testbed for that evolution.
+
+The questions this project wants to explore:
+
+- How can AI be used not merely to automate administration, but to support teaching?
+- How can learning science be built into the architecture rather than sprinkled on top as an afterthought?
+- Can a system built to manage courses become something that genuinely helps improve teaching and learning?
+
+## Status
+
+Early. The codebase is a working LMS; the research agenda on top of it is just beginning. Expect things to change.
+
+## Contributing
+
+CoreLMS is looking for collaborators. If the argument resonates with you — as a developer, educator, learning scientist, instructional designer, or institutional leader — please get in touch. The goal is not simply to build another LMS. The goal is to use a simple, open system as a testbed for rethinking what learning software should do.
+
+Open an issue to introduce yourself, share an idea, or suggest a direction.
 
 ## Tech Stack
 
@@ -11,7 +43,7 @@ A minimalist Learning Management System demonstrating that core LMS functionalit
 - **Styling:** Tailwind CSS 4 with Radix UI / shadcn components
 - **Icons:** HugeIcons
 
-## Features
+## What's in the box today
 
 - Role-based access for **learners**, **instructors**, and **admins**
 - Course → module → section → activity content hierarchy
@@ -83,4 +115,4 @@ Optimized for [Vercel](https://vercel.com). Set the environment variables above 
 
 ## License
 
-MIT
+MIT — see [LICENSE](./LICENSE).
