@@ -22,7 +22,7 @@ export function CourseList({ heading, emptyText, courses }: CourseListProps) {
               className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors"
             >
               <Link
-                className="text-sm font-medium text-slate-800 hover:text-teal-700"
+                className="text-sm font-medium text-slate-800 hover:text-emerald-700"
                 href={`/courses/${course.id}`}
               >
                 {course.title}

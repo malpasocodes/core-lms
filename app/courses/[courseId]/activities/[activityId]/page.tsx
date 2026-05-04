@@ -242,10 +242,10 @@ export default async function ActivityPage(props: ActivityPageProps) {
 
       {/* ── Watch ── */}
       {item.activityType === "watch" && (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10 space-y-4">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10 space-y-4">
           {user.role === "learner" && isCompleted ? (
-            <div className="flex items-center justify-center rounded-lg border border-dashed border-border/60 bg-background/60 px-6 py-12 text-center">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+              <p className="text-sm text-slate-500">
                 You&apos;ve marked this video complete. The video is no longer available for replay.
               </p>
             </div>
@@ -256,7 +256,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
                 title={item.activityTitle}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                className="absolute inset-0 h-full w-full rounded-lg border border-border/60"
+                className="absolute inset-0 h-full w-full rounded-lg border border-slate-200"
               />
             </div>
           )}
@@ -273,7 +273,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
             <>
               <form
                 action={updateWatchActivityTranscriptAction}
-                className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3"
+                className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3"
               >
                 <input type="hidden" name="activityId" value={activityId} />
                 <input
@@ -282,8 +282,8 @@ export default async function ActivityPage(props: ActivityPageProps) {
                   value={`/courses/${courseId}/activities/${activityId}`}
                 />
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-sm font-semibold text-foreground">Transcript</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm font-semibold text-slate-900">Transcript</p>
+                  <p className="text-xs text-slate-500">
                     Paste the video transcript to enable MCQ generation.
                   </p>
                 </div>
@@ -299,9 +299,9 @@ export default async function ActivityPage(props: ActivityPageProps) {
                 </Button>
               </form>
 
-              <div className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3">
-                <p className="text-sm font-semibold text-foreground">Generate MCQ Quiz</p>
-                <p className="text-xs text-muted-foreground">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+                <p className="text-sm font-semibold text-slate-900">Generate MCQ Quiz</p>
+                <p className="text-xs text-slate-500">
                   Use AI to generate multiple-choice questions from the saved transcript. A new MCQ
                   assessment will be attached to this activity.
                 </p>
@@ -309,7 +309,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
                   <form action={generateMcqFromActivityAction} className="flex items-center gap-3">
                     <input type="hidden" name="activityId" value={activityId} />
                     <label
-                      className="text-xs text-muted-foreground"
+                      className="text-xs text-slate-500"
                       htmlFor="watch-num-questions"
                     >
                       Questions:
@@ -330,32 +330,32 @@ export default async function ActivityPage(props: ActivityPageProps) {
                     <GenerateMcqButton />
                   </form>
                 ) : (
-                  <p className="text-xs italic text-muted-foreground">
+                  <p className="text-xs italic text-slate-500">
                     Save a transcript first to enable quiz generation.
                   </p>
                 )}
               </div>
 
-              <div className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-sm font-semibold text-foreground">
+                  <p className="text-sm font-semibold text-slate-900">
                     Learner notes &amp; AI analysis ({instructorWatchNotes.length})
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-500">
                     Score 1–10 against the saved transcript. Visible to instructors only.
                   </p>
                 </div>
                 {instructorWatchNotes.length === 0 ? (
-                  <p className="text-xs italic text-muted-foreground">No learner notes yet.</p>
+                  <p className="text-xs italic text-slate-500">No learner notes yet.</p>
                 ) : (
                   <ul className="space-y-3">
                     {instructorWatchNotes.map((row, i) => (
                       <li
                         key={i}
-                        className="rounded-lg border border-border/60 bg-background/60 p-4 space-y-2"
+                        className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2"
                       >
                         <div className="flex items-baseline justify-between gap-2">
-                          <p className="text-xs font-semibold text-foreground">{row.email}</p>
+                          <p className="text-xs font-semibold text-slate-900">{row.email}</p>
                           <div className="flex items-center gap-2">
                             {row.aiStatus === "complete" && row.aiScore !== null ? (
                               <Badge variant="secondary">{row.aiScore}/10</Badge>
@@ -364,25 +364,25 @@ export default async function ActivityPage(props: ActivityPageProps) {
                             ) : row.aiStatus === "failed" ? (
                               <Badge variant="destructive">Analysis failed</Badge>
                             ) : null}
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-slate-500">
                               {row.updatedAt.toLocaleString()}
                             </p>
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                          <p className="text-xs uppercase tracking-wide text-slate-500">
                             Notes
                           </p>
-                          <p className="whitespace-pre-wrap text-sm text-foreground/90">
+                          <p className="whitespace-pre-wrap text-sm text-slate-800">
                             {row.notes || "(no notes)"}
                           </p>
                         </div>
                         {row.aiAnalysis && (
                           <div className="space-y-1">
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            <p className="text-xs uppercase tracking-wide text-slate-500">
                               Analysis
                             </p>
-                            <p className="whitespace-pre-wrap text-sm text-foreground/90">
+                            <p className="whitespace-pre-wrap text-sm text-slate-800">
                               {row.aiAnalysis}
                             </p>
                           </div>
@@ -399,7 +399,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
 
       {/* ── Listen ── */}
       {item.activityType === "listen" && (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10 space-y-3">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10 space-y-3">
           <audio controls className="w-full" src={payload.audioUrl ?? item.activityContent}>
             Your browser does not support the audio element.
           </audio>
@@ -408,30 +408,30 @@ export default async function ActivityPage(props: ActivityPageProps) {
 
       {/* ── Read ── */}
       {item.activityType === "read" && payload.fileType === "pdf" && (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10 space-y-3">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10 space-y-3">
           <iframe
             src={item.activityContent}
-            className="w-full rounded border border-border/60"
+            className="w-full rounded border border-slate-200"
             style={{ height: "80vh" }}
           />
           <a
             href={item.activityContent}
             target="_blank"
             rel="noreferrer"
-            className="text-sm text-foreground underline hover:text-primary transition-colors"
+            className="text-sm text-slate-900 underline hover:text-emerald-700 transition-colors"
           >
             Open PDF in new tab
           </a>
           {(isOwner || isAdmin) && (
-            <div className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3">
-              <p className="text-sm font-semibold text-foreground">Generate MCQ Quiz</p>
-              <p className="text-xs text-muted-foreground">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <p className="text-sm font-semibold text-slate-900">Generate MCQ Quiz</p>
+              <p className="text-xs text-slate-500">
                 Use AI to generate multiple-choice questions from this PDF. A new MCQ assessment
                 will be attached to this activity.
               </p>
               <form action={generateMcqFromActivityAction} className="flex items-center gap-3">
                 <input type="hidden" name="activityId" value={activityId} />
-                <label className="text-xs text-muted-foreground" htmlFor="num-questions">
+                <label className="text-xs text-slate-500" htmlFor="num-questions">
                   Questions:
                 </label>
                 <select
@@ -460,15 +460,15 @@ export default async function ActivityPage(props: ActivityPageProps) {
             initialContent={item.activityContent}
             redirectTo={`/courses/${courseId}/activities/${activityId}`}
           />
-          <div className="rounded-lg border border-border/60 bg-card/70 p-4 space-y-3">
-            <p className="text-sm font-semibold text-foreground">Generate MCQ Quiz</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <p className="text-sm font-semibold text-slate-900">Generate MCQ Quiz</p>
+            <p className="text-xs text-slate-500">
               Use AI to generate multiple-choice questions from this Markdown content. A new MCQ
               assessment will be attached to this activity.
             </p>
             <form action={generateMcqFromActivityAction} className="flex items-center gap-3">
               <input type="hidden" name="activityId" value={activityId} />
-              <label className="text-xs text-muted-foreground" htmlFor="md-num-questions">
+              <label className="text-xs text-slate-500" htmlFor="md-num-questions">
                 Questions:
               </label>
               <select
@@ -487,7 +487,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
           </div>
         </div>
       ) : item.activityType === "read" && payload.fileType === "markdown" ? (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10">
           <div className="prose prose-neutral dark:prose-invert max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
               {item.activityContent}
@@ -502,14 +502,14 @@ export default async function ActivityPage(props: ActivityPageProps) {
           redirectTo={`/courses/${courseId}/activities/${activityId}`}
         />
       ) : item.activityType === "read" && payload.fileType === "html" ? (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10">
           <div
             className="prose prose-neutral dark:prose-invert max-w-none"
             dangerouslySetInnerHTML={{ __html: item.activityContent }}
           />
         </div>
       ) : item.activityType === "read" && payload.fileType === "normalized" && payload.blocks ? (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10">
           <NormalizedContentRenderer blocks={payload.blocks} />
         </div>
       ) : null}
@@ -517,13 +517,13 @@ export default async function ActivityPage(props: ActivityPageProps) {
       {/* ── Write ── */}
       {item.activityType === "write" && (
         <div className="space-y-6">
-          <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10 space-y-3">
-            <p className="text-sm font-semibold text-foreground">Prompt</p>
-            <p className="text-sm text-foreground/90 leading-7 whitespace-pre-wrap">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10 space-y-3">
+            <p className="text-sm font-semibold text-slate-900">Prompt</p>
+            <p className="text-sm text-slate-800 leading-7 whitespace-pre-wrap">
               {payload.prompt ?? item.activityContent}
             </p>
             {(payload.minChars || payload.maxChars) && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-slate-500">
                 {payload.minChars && payload.maxChars
                   ? `${payload.minChars}–${payload.maxChars} characters`
                   : payload.minChars
@@ -545,21 +545,21 @@ export default async function ActivityPage(props: ActivityPageProps) {
           )}
 
           {(isOwner || isAdmin) && (
-            <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-8 md:px-10 md:py-10 space-y-4">
-              <p className="text-sm font-semibold text-foreground">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10 space-y-4">
+              <p className="text-sm font-semibold text-slate-900">
                 Submissions ({writeSubmissions.length})
               </p>
               {writeSubmissions.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No submissions yet.</p>
+                <p className="text-xs text-slate-500">No submissions yet.</p>
               ) : (
                 <ul className="space-y-4">
                   {writeSubmissions.map((sub, i) => (
-                    <li key={i} className="rounded-lg border border-border/60 bg-background/60 p-4 space-y-1">
-                      <p className="text-xs font-semibold text-foreground">{sub.email}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <li key={i} className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-1">
+                      <p className="text-xs font-semibold text-slate-900">{sub.email}</p>
+                      <p className="text-xs text-slate-500">
                         {sub.submittedAt.toLocaleString()}
                       </p>
-                      <p className="text-sm text-foreground/90 whitespace-pre-wrap mt-2">
+                      <p className="text-sm text-slate-800 whitespace-pre-wrap mt-2">
                         {sub.submissionText ?? "(no text)"}
                       </p>
                     </li>
@@ -574,18 +574,18 @@ export default async function ActivityPage(props: ActivityPageProps) {
       {/* ── Assessments attached to this activity ── */}
       {listedAssessments.length > 0 &&
         !(user.role === "learner" && item.activityType === "watch") && (
-        <div className="rounded-2xl border border-border/70 bg-card/80 px-6 py-6 space-y-3">
-          <p className="text-sm font-semibold text-foreground">Assessments</p>
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-6 space-y-3">
+          <p className="text-sm font-semibold text-slate-900">Assessments</p>
           <ul className="space-y-2">
             {listedAssessments.map((a) => (
               <li key={a.id}>
                 <Link
                   href={`/courses/${courseId}/activities/${activityId}/assessments/${a.id}`}
-                  className="flex items-center justify-between rounded-lg border border-border/60 bg-background/70 px-4 py-3 hover:bg-background"
+                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50"
                 >
                   <span className="space-y-1">
-                    <span className="block text-sm font-semibold text-foreground">{a.title}</span>
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="block text-sm font-semibold text-slate-900">{a.title}</span>
+                    <span className="block text-xs text-slate-500">
                       {a.type === "mcq" ? "Multiple choice" : "Open-ended"}
                       {a.graded ? " • Graded" : " • Formative"}
                       {a.dueAt ? ` • Due ${a.dueAt.toLocaleDateString()}` : ""}
@@ -602,7 +602,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
       <div className="flex items-center justify-between">
         {prev ? (
           <Link
-            className="text-sm font-semibold text-foreground underline"
+            className="text-sm font-semibold text-slate-900 underline"
             href={`/courses/${courseId}/activities/${prev.id}`}
           >
             ← {prev.title}
@@ -623,7 +623,7 @@ export default async function ActivityPage(props: ActivityPageProps) {
           ) : null}
           {next ? (
             <Link
-              className="text-sm font-semibold text-foreground underline"
+              className="text-sm font-semibold text-slate-900 underline"
               href={`/courses/${courseId}/activities/${next.id}`}
             >
               {next.title} →

@@ -50,10 +50,10 @@ export function WriteActivityClient({
         <span
           className={`text-xs ${
             tooLong
-              ? "text-red-600 dark:text-red-400"
+              ? "text-red-600"
               : tooShort
-              ? "text-amber-600 dark:text-amber-400"
-              : "text-muted-foreground"
+              ? "text-amber-600"
+              : "text-slate-500"
           }`}
         >
           {count} character{count === 1 ? "" : "s"}

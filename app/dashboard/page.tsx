@@ -237,7 +237,7 @@ export default async function DashboardPage(props: DashboardPageProps) {
               <div className="mt-4 border-t border-slate-100 pt-3">
                 <Link
                   href="/instructor/enroll"
-                  className="text-sm font-medium text-teal-700 hover:text-teal-600"
+                  className="text-sm font-medium text-emerald-700 hover:text-emerald-600"
                 >
                   Manage enrollments →
                 </Link>
