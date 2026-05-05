@@ -92,7 +92,9 @@ export type Module = typeof modules.$inferSelect;
 export type Section = typeof sections.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 
-export const assessmentTypeEnum = pgEnum("assessment_type", ["open_ended", "mcq"]);
+export const assessmentTypeEnum = pgEnum("assessment_type", ["open_ended", "mcq", "notes"]);
+export const assessmentVisibilityEnum = pgEnum("assessment_visibility", ["visible", "invisible"]);
+export const assessmentWeightingEnum = pgEnum("assessment_weighting", ["formative", "summative"]);
 
 export const assessments = pgTable("assessments", {
   id: text("id").primaryKey(),
@@ -103,6 +105,8 @@ export const assessments = pgTable("assessments", {
   title: text("title").notNull(),
   description: text("description"),
   graded: boolean("graded").notNull().default(false),
+  visibility: assessmentVisibilityEnum("visibility").notNull().default("visible"),
+  weighting: assessmentWeightingEnum("weighting").notNull().default("summative"),
   mcqModel: text("mcq_model"),
   dueAt: timestamp("due_at", { withTimezone: true }),
   order: integer("order").notNull(),
@@ -124,6 +128,11 @@ export const submissions = pgTable(
     submissionText: text("submission_text"),
     fileUrl: text("file_url"),
     mcqAnswers: text("mcq_answers"),
+    aiScore: integer("ai_score"),
+    aiAnalysis: text("ai_analysis"),
+    aiModel: text("ai_model"),
+    aiStatus: text("ai_status"),
+    aiAnalyzedAt: timestamp("ai_analyzed_at", { withTimezone: true }),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
@@ -150,35 +159,6 @@ export const completions = pgTable(
 
 export type Submission = typeof submissions.$inferSelect;
 export type Completion = typeof completions.$inferSelect;
-
-export const activityNotes = pgTable(
-  "activity_notes",
-  {
-    id: text("id").primaryKey(),
-    activityId: text("activity_id")
-      .notNull()
-      .references(() => activities.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    notes: text("notes").notNull().default(""),
-    aiScore: integer("ai_score"),
-    aiAnalysis: text("ai_analysis"),
-    aiModel: text("ai_model"),
-    aiStatus: text("ai_status"),
-    aiAnalyzedAt: timestamp("ai_analyzed_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => ({
-    uniqueActivityUser: uniqueIndex("activity_notes_activity_user_unique").on(
-      table.activityId,
-      table.userId
-    ),
-  })
-);
-
-export type ActivityNote = typeof activityNotes.$inferSelect;
 
 export const userProfiles = pgTable("user_profiles", {
   userId: text("user_id")

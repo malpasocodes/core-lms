@@ -36,7 +36,8 @@ export default async function GradebookPage({ params }: Props) {
   if (!isOwner && !isAdmin) redirect(`/courses/${courseId}`);
 
   // All assessments in this course (joined through activity → section → module).
-  // Show only graded assessments — formative assessments don't belong in a grade view.
+  // Only summative assessments roll into the gradebook — formative assessments
+  // (including auto-generated watch notes) don't count toward overall grades.
   const assessmentList = await db
     .select({
       id: assessments.id,
@@ -49,7 +50,7 @@ export default async function GradebookPage({ params }: Props) {
     .leftJoin(activities, eq(assessments.activityId, activities.id))
     .leftJoin(sections, eq(activities.sectionId, sections.id))
     .leftJoin(modules, eq(sections.moduleId, modules.id))
-    .where(and(eq(modules.courseId, courseId), eq(assessments.graded, true)))
+    .where(and(eq(modules.courseId, courseId), eq(assessments.weighting, "summative")))
     .orderBy(asc(assessments.createdAt));
 
   // Enrolled learners
@@ -117,12 +118,12 @@ export default async function GradebookPage({ params }: Props) {
           Gradebook
           <span className="ml-2 font-normal text-slate-400">
             {learnerList.length} {learnerList.length === 1 ? "learner" : "learners"} ·{" "}
-            {assessmentList.length} graded {assessmentList.length === 1 ? "assessment" : "assessments"}
+            {assessmentList.length} summative {assessmentList.length === 1 ? "assessment" : "assessments"}
           </span>
         </h2>
 
         {assessmentList.length === 0 ? (
-          <p className="text-sm text-slate-400">No graded assessments in this course yet.</p>
+          <p className="text-sm text-slate-400">No summative assessments in this course yet.</p>
         ) : learnerList.length === 0 ? (
           <p className="text-sm text-slate-400">No learners enrolled yet.</p>
         ) : (

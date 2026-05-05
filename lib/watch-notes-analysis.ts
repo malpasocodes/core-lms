@@ -5,7 +5,7 @@ import { Mistral } from "@mistralai/mistralai";
 import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
-import { activities, activityNotes } from "@/lib/schema";
+import { activities, assessments, submissions } from "@/lib/schema";
 import { getActiveModel } from "@/lib/settings";
 
 type AnalysisResult = { score: number; analysis: string };
@@ -81,11 +81,20 @@ async function runMistral(modelId: string, transcript: string, notes: string) {
 export async function analyzeWatchNotes(activityId: string, userId: string): Promise<void> {
   const db = await getDb();
 
-  const noteRow = await db.query.activityNotes.findFirst({
-    columns: { id: true, notes: true },
-    where: (n, { and, eq }) => and(eq(n.activityId, activityId), eq(n.userId, userId)),
-  });
-  if (!noteRow || !noteRow.notes.trim()) return;
+  const submissionRow = await db
+    .select({ id: submissions.id, notes: submissions.submissionText })
+    .from(submissions)
+    .innerJoin(assessments, eq(submissions.assessmentId, assessments.id))
+    .where(
+      and(
+        eq(assessments.activityId, activityId),
+        eq(assessments.type, "notes"),
+        eq(submissions.userId, userId),
+      ),
+    )
+    .limit(1);
+  const sub = submissionRow[0];
+  if (!sub || !sub.notes || !sub.notes.trim()) return;
 
   const activityRow = await db
     .select({ payload: activities.contentPayload, type: activities.type })
@@ -104,9 +113,9 @@ export async function analyzeWatchNotes(activityId: string, userId: string): Pro
   }
   if (!transcript) {
     await db
-      .update(activityNotes)
+      .update(submissions)
       .set({ aiStatus: "failed", aiAnalyzedAt: new Date() })
-      .where(and(eq(activityNotes.activityId, activityId), eq(activityNotes.userId, userId)));
+      .where(eq(submissions.id, sub.id));
     return;
   }
 
@@ -115,11 +124,11 @@ export async function analyzeWatchNotes(activityId: string, userId: string): Pro
   try {
     const result =
       activeModel.provider === "anthropic"
-        ? await runAnthropic(activeModel.id, transcript, noteRow.notes)
-        : await runMistral(activeModel.id, transcript, noteRow.notes);
+        ? await runAnthropic(activeModel.id, transcript, sub.notes)
+        : await runMistral(activeModel.id, transcript, sub.notes);
 
     await db
-      .update(activityNotes)
+      .update(submissions)
       .set({
         aiScore: result.score,
         aiAnalysis: result.analysis,
@@ -127,11 +136,11 @@ export async function analyzeWatchNotes(activityId: string, userId: string): Pro
         aiStatus: "complete",
         aiAnalyzedAt: new Date(),
       })
-      .where(and(eq(activityNotes.activityId, activityId), eq(activityNotes.userId, userId)));
+      .where(eq(submissions.id, sub.id));
   } catch {
     await db
-      .update(activityNotes)
+      .update(submissions)
       .set({ aiStatus: "failed", aiAnalyzedAt: new Date() })
-      .where(and(eq(activityNotes.activityId, activityId), eq(activityNotes.userId, userId)));
+      .where(eq(submissions.id, sub.id));
   }
 }

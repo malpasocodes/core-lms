@@ -103,7 +103,12 @@ export async function getCourseJourney(
             order: assessments.order,
           })
           .from(assessments)
-          .where(inArray(assessments.activityId, activityIds))
+          .where(
+            and(
+              inArray(assessments.activityId, activityIds),
+              eq(assessments.visibility, "visible"),
+            ),
+          )
           .orderBy(asc(assessments.order))
       : [];
 

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { activities, activityNotes, assessments, courses, modules, sections, submissions, users } from "@/lib/schema";
+import { activities, assessments, courses, modules, sections, submissions, users } from "@/lib/schema";
 import { markActivityCompleteAction } from "@/lib/progress-actions";
 import { NormalizedContentRenderer } from "@/components/normalized-content-renderer";
 import { MarkdownItemEditor } from "@/components/markdown-item-editor";
@@ -139,12 +139,16 @@ export default async function ActivityPage(props: ActivityPageProps) {
       title: assessments.title,
       description: assessments.description,
       graded: assessments.graded,
+      visibility: assessments.visibility,
+      weighting: assessments.weighting,
       dueAt: assessments.dueAt,
       order: assessments.order,
     })
     .from(assessments)
     .where(eq(assessments.activityId, activityId))
     .orderBy(asc(assessments.order));
+
+  const notesAssessment = allAssessments.find((a) => a.type === "notes") ?? null;
 
   let builtInWriteAssessmentId: string | null = null;
   let existingWriteSubmission: { submissionText: string | null } | null = null;
@@ -186,16 +190,27 @@ export default async function ActivityPage(props: ActivityPageProps) {
     }
   }
 
-  const listedAssessments = allAssessments.filter((a) => a.id !== builtInWriteAssessmentId);
+  const listedAssessments = allAssessments.filter((a) => {
+    if (a.id === builtInWriteAssessmentId) return false;
+    if (a.type === "notes") return false;
+    if (user.role === "learner" && a.visibility === "invisible") return false;
+    return true;
+  });
 
   let watchNote: { notes: string } | null = null;
-  if (item.activityType === "watch" && user.role === "learner") {
+  if (item.activityType === "watch" && user.role === "learner" && notesAssessment) {
     const noteRow = await db
-      .select({ notes: activityNotes.notes })
-      .from(activityNotes)
-      .where(and(eq(activityNotes.activityId, activityId), eq(activityNotes.userId, user.id)))
+      .select({ notes: submissions.submissionText })
+      .from(submissions)
+      .where(
+        and(
+          eq(submissions.assessmentId, notesAssessment.id),
+          eq(submissions.userId, user.id),
+        ),
+      )
       .limit(1);
-    watchNote = noteRow[0] ?? null;
+    const text = noteRow[0]?.notes ?? null;
+    watchNote = text !== null ? { notes: text } : null;
   }
 
   type WatchNoteRow = {
@@ -207,27 +222,27 @@ export default async function ActivityPage(props: ActivityPageProps) {
     updatedAt: Date;
   };
   let instructorWatchNotes: WatchNoteRow[] = [];
-  if (item.activityType === "watch" && (isOwner || isAdmin)) {
+  if (item.activityType === "watch" && (isOwner || isAdmin) && notesAssessment) {
     const rows = await db
       .select({
         email: users.email,
-        notes: activityNotes.notes,
-        aiScore: activityNotes.aiScore,
-        aiAnalysis: activityNotes.aiAnalysis,
-        aiStatus: activityNotes.aiStatus,
-        updatedAt: activityNotes.updatedAt,
+        notes: submissions.submissionText,
+        aiScore: submissions.aiScore,
+        aiAnalysis: submissions.aiAnalysis,
+        aiStatus: submissions.aiStatus,
+        submittedAt: submissions.submittedAt,
       })
-      .from(activityNotes)
-      .leftJoin(users, eq(activityNotes.userId, users.id))
-      .where(eq(activityNotes.activityId, activityId))
-      .orderBy(asc(activityNotes.updatedAt));
+      .from(submissions)
+      .leftJoin(users, eq(submissions.userId, users.id))
+      .where(eq(submissions.assessmentId, notesAssessment.id))
+      .orderBy(asc(submissions.submittedAt));
     instructorWatchNotes = rows.map((r) => ({
       email: r.email ?? "",
-      notes: r.notes,
+      notes: r.notes ?? "",
       aiScore: r.aiScore,
       aiAnalysis: r.aiAnalysis,
       aiStatus: r.aiStatus,
-      updatedAt: r.updatedAt,
+      updatedAt: r.submittedAt,
     }));
   }
 
@@ -675,7 +690,8 @@ export default async function ActivityPage(props: ActivityPageProps) {
                     <span className="block text-sm font-semibold text-slate-900">{a.title}</span>
                     <span className="block text-xs text-slate-500">
                       {a.type === "mcq" ? "Multiple choice" : "Open-ended"}
-                      {a.graded ? " • Graded" : " • Formative"}
+                      {a.weighting === "summative" ? " • Summative" : " • Formative"}
+                      {a.visibility === "invisible" ? " • Hidden from learners" : ""}
                       {a.dueAt ? ` • Due ${a.dueAt.toLocaleDateString()}` : ""}
                     </span>
                   </span>

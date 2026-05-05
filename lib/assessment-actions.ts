@@ -36,6 +36,10 @@ export async function createAssessmentAction(formData: FormData) {
   const typeRaw = (formData.get("type") as string | null)?.trim() || "open_ended";
   const type = typeRaw === "mcq" ? "mcq" : "open_ended";
   const graded = formData.get("graded") === "on";
+  const visibilityRaw = (formData.get("visibility") as string | null)?.trim();
+  const visibility = visibilityRaw === "invisible" ? "invisible" : "visible";
+  const weightingRaw = (formData.get("weighting") as string | null)?.trim();
+  const weighting = weightingRaw === "formative" ? "formative" : "summative";
   const dueAtRaw = (formData.get("dueAt") as string | null)?.trim() || null;
   const dueAt = dueAtRaw ? new Date(dueAtRaw) : null;
 
@@ -81,6 +85,8 @@ export async function createAssessmentAction(formData: FormData) {
     title,
     description: description || null,
     graded,
+    visibility,
+    weighting,
     dueAt,
     order: nextOrder,
   });

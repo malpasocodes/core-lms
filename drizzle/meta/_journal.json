@@ -57,6 +57,13 @@
       "when": 1777933553706,
       "tag": "0007_dry_gideon",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778006321584,
+      "tag": "0008_friendly_doctor_octopus",
+      "breakpoints": true
     }
   ]
 }

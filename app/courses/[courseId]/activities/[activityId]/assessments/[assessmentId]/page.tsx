@@ -43,6 +43,8 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
       type: assessments.type,
       mcqModel: assessments.mcqModel,
       graded: assessments.graded,
+      visibility: assessments.visibility,
+      weighting: assessments.weighting,
       dueAt: assessments.dueAt,
       activityId: activities.id,
       activityTitle: activities.title,
@@ -82,6 +84,10 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
 
   if (!(isAdmin || isOwner || isEnrolled)) {
     redirect("/dashboard?error=Not%20enrolled%20in%20this%20course");
+  }
+
+  if (user.role === "learner" && assessment.visibility === "invisible") {
+    redirect(`/courses/${courseId}/activities/${activityId}`);
   }
 
   const questions = isMcq
@@ -134,7 +140,8 @@ export default async function AssessmentPage(props: AssessmentPageProps) {
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
           {isMcq ? "Quiz" : "Assessment"}
-          {assessment.graded ? " · Graded" : " · Formative"}
+          {assessment.weighting === "summative" ? " · Summative" : " · Formative"}
+          {assessment.visibility === "invisible" ? " · Hidden from learners" : ""}
         </p>
         <h1 className="text-3xl font-semibold text-slate-900">{assessment.title}</h1>
         <p className="text-sm text-slate-600">

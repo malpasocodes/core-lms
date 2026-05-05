@@ -353,7 +353,9 @@ export default async function CourseDetailPage(props: CoursePageProps) {
     if (builtIn) builtInWriteAssessmentIds.add(builtIn.id);
   }
 
-  const visibleAssessments = assessmentRows.filter((a) => !builtInWriteAssessmentIds.has(a.id));
+  const visibleAssessments = assessmentRows.filter(
+    (a) => !builtInWriteAssessmentIds.has(a.id) && a.type !== "notes",
+  );
 
   // Learners are handled in the early-return branch above; instructor/admin code below.
   const submissionCounts =
@@ -675,7 +677,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                       </summary>
                                       <form
                                         action={uploadListenActivityAction}
-                                        encType="multipart/form-data"
                                         className="space-y-2 border-t border-slate-200 p-3"
                                       >
                                         <input type="hidden" name="sectionId" value={sec.id} />
@@ -704,7 +705,6 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                                       </summary>
                                       <form
                                         action={createReadActivityAction}
-                                        encType="multipart/form-data"
                                         className="space-y-2 border-t border-slate-200 p-3"
                                       >
                                         <input type="hidden" name="sectionId" value={sec.id} />

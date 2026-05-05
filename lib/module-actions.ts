@@ -2,14 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { uploadFileToR2, uploadPdfToR2 } from "@/lib/r2";
 import {
   activities,
-  activityNotes,
   assessments,
   completions,
   courses,
@@ -320,27 +319,30 @@ export async function saveWatchNotesAndCompleteAction(formData: FormData) {
   }
 
   const now = new Date();
+  const notesAssessmentId = await ensureWatchNotesAssessment(db, activityId);
 
-  const existingNote = await db.query.activityNotes.findFirst({
-    columns: { id: true },
-    where: (n, { and, eq }) => and(eq(n.activityId, activityId), eq(n.userId, user.id)),
-  });
-  if (existingNote) {
-    await db
-      .update(activityNotes)
-      .set({ notes, aiStatus: "pending", updatedAt: now })
-      .where(eq(activityNotes.id, existingNote.id));
-  } else {
-    await db.insert(activityNotes).values({
+  await db
+    .insert(submissions)
+    .values({
       id: crypto.randomUUID(),
-      activityId,
+      assessmentId: notesAssessmentId,
       userId: user.id,
-      notes,
+      submissionText: notes,
       aiStatus: "pending",
-      createdAt: now,
-      updatedAt: now,
+      submittedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [submissions.assessmentId, submissions.userId],
+      set: {
+        submissionText: notes,
+        aiStatus: "pending",
+        aiScore: null,
+        aiAnalysis: null,
+        aiModel: null,
+        aiAnalyzedAt: null,
+        submittedAt: now,
+      },
     });
-  }
 
   await db.insert(completions).values({
     id: crypto.randomUUID(),
@@ -355,6 +357,32 @@ export async function saveWatchNotesAndCompleteAction(formData: FormData) {
   });
 
   redirect(`${back}?notice=Video%20marked%20complete`);
+}
+
+async function ensureWatchNotesAssessment(
+  db: Awaited<ReturnType<typeof getDb>>,
+  activityId: string,
+): Promise<string> {
+  const existing = await db
+    .select({ id: assessments.id })
+    .from(assessments)
+    .where(and(eq(assessments.activityId, activityId), eq(assessments.type, "notes")))
+    .limit(1);
+  if (existing[0]) return existing[0].id;
+
+  const id = crypto.randomUUID();
+  await db.insert(assessments).values({
+    id,
+    activityId,
+    type: "notes",
+    title: "Watch notes",
+    description: null,
+    graded: true,
+    visibility: "invisible",
+    weighting: "formative",
+    order: 0,
+  });
+  return id;
 }
 
 export async function updateWatchActivityTranscriptAction(formData: FormData) {
@@ -525,8 +553,9 @@ export async function createWatchActivityAction(formData: FormData) {
   const { db, courseId } = await getSectionCourseOrRedirect(sectionId, user.id, user.role, "/dashboard");
   const order = await nextActivityOrder(db, sectionId);
 
+  const activityId = crypto.randomUUID();
   await db.insert(activities).values({
-    id: crypto.randomUUID(),
+    id: activityId,
     sectionId,
     type: "watch",
     title,
@@ -534,6 +563,8 @@ export async function createWatchActivityAction(formData: FormData) {
     contentPayload: JSON.stringify({ youtubeUrl, youtubeId }),
     order,
   });
+
+  await ensureWatchNotesAssessment(db, activityId);
 
   redirect(`/courses/${courseId}?tab=modules`);
 }
