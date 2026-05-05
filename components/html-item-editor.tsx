@@ -11,6 +11,8 @@ type Props = {
   initialTitle: string;
   initialContent: string;
   redirectTo: string;
+  saveAction?: (formData: FormData) => Promise<void> | void;
+  uploadIdField?: string;
 };
 
 type ImageRef = {
@@ -24,6 +26,74 @@ type ImageRef = {
   figureStart: number | null;
   figureEnd: number | null;
 };
+
+type BlockRef = {
+  key: string;
+  index: number;
+  kind: string;
+  label: string;
+  start: number;
+  end: number;
+};
+
+const BLOCK_SKIP_TYPES = new Set(["page", "title", "media", "metadata"]);
+const BLOCK_CLASS_RE = /\b(os-figure|intro-text|intro-body|section)\b/;
+
+function findBlocks(content: string): BlockRef[] {
+  const refs: BlockRef[] = [];
+  const openRe = /<div\b([^>]*)>/gi;
+  let m: RegExpExecArray | null;
+  let i = 1;
+
+  while ((m = openRe.exec(content)) !== null) {
+    const attrs = m[1];
+    const dataType = attrs.match(/data-type\s*=\s*["']([^"']+)["']/i)?.[1];
+    const cls = attrs.match(/class\s*=\s*["']([^"']*)["']/i)?.[1] ?? "";
+    const dataLabel = attrs.match(/data-label\s*=\s*["']([^"']*)["']/i)?.[1];
+
+    const isStructuralClass = BLOCK_CLASS_RE.test(cls);
+    const isBlock = (dataType && !BLOCK_SKIP_TYPES.has(dataType)) || isStructuralClass;
+    if (!isBlock) continue;
+
+    const start = m.index;
+    const tagEnd = start + m[0].length;
+
+    const balRe = /<\/?div\b[^>]*>/gi;
+    balRe.lastIndex = tagEnd;
+    let depth = 1;
+    let end = -1;
+    let inner: RegExpExecArray | null;
+    while ((inner = balRe.exec(content)) !== null) {
+      depth += inner[0].startsWith("</") ? -1 : 1;
+      if (depth === 0) {
+        end = inner.index + inner[0].length;
+        break;
+      }
+    }
+    if (end === -1) continue;
+
+    let label = dataLabel?.trim() ?? "";
+    if (!label) {
+      const innerHtml = content.slice(tagEnd, end);
+      const h = innerHtml.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
+      if (h) label = h[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    }
+    const kindHint =
+      dataType ?? cls.split(/\s+/).find((c) => /^os-|^intro-/.test(c)) ?? "block";
+    if (!label) label = kindHint;
+
+    refs.push({
+      key: `${start}-${i}`,
+      index: i,
+      kind: kindHint,
+      label: label.length > 80 ? label.slice(0, 77) + "…" : label,
+      start,
+      end,
+    });
+    i++;
+  }
+  return refs;
+}
 
 function findImages(content: string): ImageRef[] {
   const refs: ImageRef[] = [];
@@ -74,7 +144,14 @@ function findImages(content: string): ImageRef[] {
   return refs;
 }
 
-export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectTo }: Props) {
+export function HtmlItemEditor({
+  itemId,
+  initialTitle,
+  initialContent,
+  redirectTo,
+  saveAction = updateReadHtmlActivityAction,
+  uploadIdField = "activityId",
+}: Props) {
   const [mode, setMode] = useState<Mode>("preview");
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
@@ -86,10 +163,11 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
 
   const images = useMemo(() => findImages(content), [content]);
+  const blocks = useMemo(() => findBlocks(content), [content]);
 
   async function uploadFile(file: File): Promise<string | null> {
     const form = new FormData();
-    form.append("activityId", itemId);
+    form.append(uploadIdField, itemId);
     form.append("file", file);
     const res = await fetch("/api/upload-image", { method: "POST", body: form });
     const data = (await res.json()) as { url?: string; error?: string };
@@ -137,13 +215,13 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
     }
   }
 
-  function locate(ref: ImageRef) {
+  function locate(start: number, end: number) {
     const ta = textareaRef.current;
     if (!ta) return;
     ta.focus();
-    ta.setSelectionRange(ref.tagStart, ref.tagEnd);
+    ta.setSelectionRange(start, end);
     const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 16;
-    const linesBefore = content.slice(0, ref.tagStart).split("\n").length;
+    const linesBefore = content.slice(0, start).split("\n").length;
     ta.scrollTop = Math.max(0, (linesBefore - 5) * lineHeight);
   }
 
@@ -151,6 +229,10 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
     const start = ref.figureStart ?? ref.tagStart;
     const end = ref.figureEnd ?? ref.tagEnd;
     setContent(content.slice(0, start) + content.slice(end));
+  }
+
+  function removeBlock(ref: BlockRef) {
+    setContent(content.slice(0, ref.start) + content.slice(ref.end));
   }
 
   function triggerReplace(key: string) {
@@ -214,8 +296,24 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
 
       {mode === "preview" && (
         <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 md:px-10 md:py-10">
+          <style>{`
+            .openstax-preview img {
+              outline: 2px dashed rgb(245 158 11);
+              outline-offset: 2px;
+            }
+            .openstax-preview div[data-type]:not([data-type="page"]):not([data-type="title"]):not([data-type="media"]):not([data-type="metadata"]) {
+              outline: 2px dotted rgb(56 189 248);
+              outline-offset: 4px;
+            }
+            .openstax-preview div.os-figure,
+            .openstax-preview div.intro-text,
+            .openstax-preview div.intro-body {
+              outline: 2px dotted rgb(34 197 94);
+              outline-offset: 4px;
+            }
+          `}</style>
           <div
-            className="prose prose-neutral dark:prose-invert max-w-none [&_img]:outline [&_img]:outline-2 [&_img]:outline-dashed [&_img]:outline-amber-500 [&_img]:outline-offset-2"
+            className="openstax-preview prose prose-neutral dark:prose-invert max-w-none"
             dangerouslySetInnerHTML={{ __html: content }}
           />
         </div>
@@ -286,7 +384,7 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
                       )}
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <Button type="button" size="sm" variant="outline" onClick={() => locate(ref)}>
+                      <Button type="button" size="sm" variant="outline" onClick={() => locate(ref.tagStart, ref.tagEnd)}>
                         Locate
                       </Button>
                       <Button
@@ -320,8 +418,57 @@ export function HtmlItemEditor({ itemId, initialTitle, initialContent, redirectT
             </div>
           )}
 
-          <form action={updateReadHtmlActivityAction} className="space-y-3">
-            <input type="hidden" name="activityId" value={itemId} />
+          {blocks.length > 0 && (
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+              <p className="text-xs uppercase tracking-[0.15em] text-slate-500">
+                Section blocks ({blocks.length})
+              </p>
+              <p className="text-xs text-slate-500">
+                Detected from OpenStax structure. Use Remove to drop a block from this Read activity.
+              </p>
+              <ul className="space-y-2">
+                {blocks.map((ref) => (
+                  <li
+                    key={ref.key}
+                    className="flex items-center gap-3 rounded border border-slate-200 bg-white p-2"
+                  >
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="text-xs font-semibold text-slate-900">
+                        Block {ref.index}
+                        <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+                          {ref.kind}
+                        </span>
+                      </p>
+                      <p className="truncate text-xs text-slate-500" title={ref.label}>
+                        {ref.label}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => locate(ref.start, ref.end)}
+                      >
+                        Locate
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => removeBlock(ref)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <form action={saveAction} className="space-y-3">
+            <input type="hidden" name={uploadIdField} value={itemId} />
             <input type="hidden" name="redirectTo" value={redirectTo} />
 
             <div className="space-y-1">

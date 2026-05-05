@@ -21,6 +21,7 @@ import {
   openstaxBooks,
   openstaxChapters,
   openstaxSections,
+  courseReferenceBooks,
 } from "@/lib/schema";
 import { and, asc, desc, eq, inArray, like, sql } from "drizzle-orm";
 import {
@@ -36,6 +37,10 @@ import {
   importOpenstaxBookToCourseAction,
   importOpenstaxSectionAsReadActivityAction,
 } from "@/lib/openstax-actions";
+import {
+  attachReferenceBookAction,
+  detachReferenceBookAction,
+} from "@/lib/reference-book-actions";
 import { CourseTabs } from "./_components/course-tabs";
 import { DeleteActivityButton } from "./_components/delete-activity-button";
 import { getCourseJourney } from "@/lib/journey";
@@ -418,6 +423,18 @@ export default async function CourseDetailPage(props: CoursePageProps) {
           )
             .map((r) => r.sourceRef?.match(/^openstax:book:([^:]+):/)?.[1])
             .filter((id): id is string => Boolean(id))
+        )
+      : new Set<string>();
+
+  const attachedReferenceBookIds =
+    canEdit && tab === "import"
+      ? new Set(
+          (
+            await db
+              .select({ openstaxBookId: courseReferenceBooks.openstaxBookId })
+              .from(courseReferenceBooks)
+              .where(eq(courseReferenceBooks.courseId, courseId))
+          ).map((r) => r.openstaxBookId),
         )
       : new Set<string>();
 
@@ -1005,6 +1022,60 @@ export default async function CourseDetailPage(props: CoursePageProps) {
                             <input type="hidden" name="bookId" value={book.id} />
                             <Button type="submit" size="sm" variant="outline">
                               Import
+                            </Button>
+                          </form>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Reference Books</CardTitle>
+              <CardDescription>
+                Attach an admin-curated OpenStax book to this course as student-facing
+                reference material. Read-only for learners, separate from the activity flow.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {importCatalog.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  No ingested OpenStax books yet.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {importCatalog.map((book) => {
+                    const attached = attachedReferenceBookIds.has(book.id);
+                    return (
+                      <li
+                        key={book.id}
+                        className="flex items-center justify-between gap-4 py-3"
+                      >
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-semibold text-slate-900">{book.title}</p>
+                          <p className="text-xs text-slate-500">
+                            {Number(book.chapterCount)} chapters · {Number(book.sectionCount)} sections
+                            {book.subject ? ` · ${book.subject}` : ""}
+                          </p>
+                        </div>
+                        {attached ? (
+                          <form action={detachReferenceBookAction}>
+                            <input type="hidden" name="courseId" value={courseId} />
+                            <input type="hidden" name="openstaxBookId" value={book.id} />
+                            <Button type="submit" size="sm" variant="outline">
+                              Detach
+                            </Button>
+                          </form>
+                        ) : (
+                          <form action={attachReferenceBookAction}>
+                            <input type="hidden" name="courseId" value={courseId} />
+                            <input type="hidden" name="openstaxBookId" value={book.id} />
+                            <Button type="submit" size="sm" variant="outline">
+                              Attach
                             </Button>
                           </form>
                         )}

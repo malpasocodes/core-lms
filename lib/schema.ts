@@ -276,6 +276,28 @@ export type OpenstaxBook = typeof openstaxBooks.$inferSelect;
 export type OpenstaxChapter = typeof openstaxChapters.$inferSelect;
 export type OpenstaxSection = typeof openstaxSections.$inferSelect;
 
+export const courseReferenceBooks = pgTable(
+  "course_reference_books",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    openstaxBookId: text("openstax_book_id")
+      .notNull()
+      .references(() => openstaxBooks.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueCourseBook: uniqueIndex("course_reference_books_course_book_unique").on(
+      table.courseId,
+      table.openstaxBookId,
+    ),
+  }),
+);
+
+export type CourseReferenceBook = typeof courseReferenceBooks.$inferSelect;
+
 // ── App Settings ───────────────────────────────────────────────────────────
 
 export const appSettings = pgTable("app_settings", {

@@ -106,9 +106,15 @@ export default async function OpenstaxBookPage({
               {sections.length > 0 && (
                 <div className="pl-3 border-l border-slate-200 space-y-1">
                   {sections.map((s) => (
-                    <p key={s.id} className="text-xs text-slate-500">
-                      {s.title}
-                    </p>
+                    <div key={s.id} className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-slate-500">{s.title}</p>
+                      <Link
+                        href={`/admin/openstax/${book.id}/sections/${s.id}`}
+                        className="text-xs text-slate-700 underline hover:text-slate-900"
+                      >
+                        Edit
+                      </Link>
+                    </div>
                   ))}
                 </div>
               )}

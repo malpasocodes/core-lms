@@ -280,3 +280,39 @@ export async function importOpenstaxSectionAsReadActivityAction(formData: FormDa
 
   redirect(`/courses/${sec.courseId}?tab=modules&notice=${encodeURIComponent("Imported Read activity from OpenStax")}`);
 }
+
+export async function updateOpenstaxSectionHtmlAction(formData: FormData) {
+  await requireAdmin();
+
+  const openstaxSectionId = (formData.get("openstaxSectionId") as string | null)?.trim();
+  const title = (formData.get("title") as string | null)?.trim();
+  const content = (formData.get("content") as string | null) ?? "";
+  const redirectTo = (formData.get("redirectTo") as string | null)?.trim();
+
+  if (!openstaxSectionId) {
+    redirect("/admin/openstax?error=Missing+section");
+  }
+  if (!title) {
+    redirect(
+      `${redirectTo || "/admin/openstax"}?error=${encodeURIComponent("Title is required")}`,
+    );
+  }
+
+  const db = await getDb();
+
+  const existing = await db.query.openstaxSections.findFirst({
+    where: (s, { eq }) => eq(s.id, openstaxSectionId!),
+  });
+  if (!existing) {
+    redirect("/admin/openstax?error=Section+not+found");
+  }
+
+  await db
+    .update(openstaxSections)
+    .set({ title: title!, contentHtml: content })
+    .where(eq(openstaxSections.id, openstaxSectionId!));
+
+  redirect(
+    `${redirectTo || "/admin/openstax"}?notice=${encodeURIComponent("Saved")}`,
+  );
+}
