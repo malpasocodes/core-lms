@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateReadHtmlActivityAction } from "@/lib/module-actions";
+import { HtmlContent } from "@/components/html-content";
 
 type Mode = "preview" | "edit";
 
@@ -312,9 +313,9 @@ export function HtmlItemEditor({
               outline-offset: 4px;
             }
           `}</style>
-          <div
+          <HtmlContent
             className="openstax-preview prose prose-neutral dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: content }}
+            html={content}
           />
         </div>
       )}

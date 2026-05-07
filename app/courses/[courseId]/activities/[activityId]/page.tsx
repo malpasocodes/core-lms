@@ -17,6 +17,7 @@ import { markActivityCompleteAction } from "@/lib/progress-actions";
 import { NormalizedContentRenderer } from "@/components/normalized-content-renderer";
 import { MarkdownItemEditor } from "@/components/markdown-item-editor";
 import { HtmlItemEditor } from "@/components/html-item-editor";
+import { HtmlContent } from "@/components/html-content";
 import { GenerateMcqButton } from "@/components/generate-mcq-button";
 import { generateMcqFromActivityAction } from "@/lib/mcq-actions";
 import {
@@ -606,9 +607,9 @@ export default async function ActivityPage(props: ActivityPageProps) {
         />
       ) : item.activityType === "read" && payload.fileType === "html" ? (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-8 md:px-10 md:py-10">
-          <div
+          <HtmlContent
             className="prose prose-neutral dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: item.activityContent }}
+            html={item.activityContent}
           />
         </div>
       ) : item.activityType === "read" && payload.fileType === "normalized" && payload.blocks ? (

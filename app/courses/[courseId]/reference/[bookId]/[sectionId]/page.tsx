@@ -13,6 +13,7 @@ import {
   openstaxSections,
 } from "@/lib/schema";
 import { CourseTabs } from "../../../_components/course-tabs";
+import { HtmlContent } from "@/components/html-content";
 
 export default async function CourseReferenceSectionPage({
   params,
@@ -123,9 +124,9 @@ export default async function CourseReferenceSectionPage({
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 md:px-10 md:py-10">
-        <div
+        <HtmlContent
           className="prose prose-neutral dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: data.section.contentHtml ?? "" }}
+          html={data.section.contentHtml ?? ""}
         />
       </div>
 
